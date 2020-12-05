@@ -4,14 +4,23 @@ class Desk extends React.Component{
     constructor(props){
         super(props)
 
+        let today = new Date()
+        let date = today.getFullYear() + "-" +
+        (((Math.round(today.getMonth())+1)+"").length==1?('0'+(Math.round(today.getMonth())+1)):(Math.round(today.getMonth())+1)) + "-" +
+        (((today.getDate()+"").length==1)?('0'+today.getDate()):(today.getDate()))
+
         this.state = {
             week: 0,
             id: 1,
-            update: false
+            update: false,
+            displayTaskAdder: "none",
+            dateForTask: date
         }
 
         this.decrementWeek = this.decrementWeek.bind(this)
         this.incrementWeek = this.incrementWeek.bind(this)
+        this.showTaskAdder = this.showTaskAdder.bind(this)
+        this.hideTaskAdder = this.hideTaskAdder.bind(this)
 
     }
 
@@ -58,6 +67,31 @@ class Desk extends React.Component{
         }
     };
 
+    showTaskAdder(date){
+        let months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+        let regexp = new RegExp(/[^\d]+/, 'ui')
+        date = date.replace(regexp, '-'+months.indexOf(date.match(regexp)[0].trim())+'-').split(/-/)
+        date[1] = Math.round(date[1])+1
+        if (date[1].length == 1){
+            date[1] = '0'+date[1]
+        }
+        if (date[0].length == 1){
+            date[0] = '0'+date[0]
+        }
+        date = date[2]+"-"+date[1]+"-"+date[0]
+        this.setState({
+            displayTaskAdder: "block",
+            dateForTask: date
+        })
+    }
+
+    hideTaskAdder(date){
+        this.setState({
+            displayTaskAdder: "none",
+            dateForTask: date
+        })
+    }
+
     render(){
         let weekStyle = {
             margin: 10,
@@ -82,6 +116,7 @@ class Desk extends React.Component{
             paddingTop: 0.5*(screen.availHeight*0.8 - 60),
             cursor: "pointer"
         }
+
         let now = new Date()
         let days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
         let months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
@@ -92,14 +127,14 @@ class Desk extends React.Component{
                 let today = new Date()
                 if (i < day){
                     today.setHours(-24*(day-i))
-                    desk.push(<Day key={i} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                    desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
                 else if(i == day){
-                    desk.push(<Day key={i} desk_id={this.state.id} currentDay={true} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                    desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={true} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
                 else{
                     today.setHours(24*(i-day))
-                    desk.push(<Day key={i} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                    desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
             }
         }
@@ -107,7 +142,7 @@ class Desk extends React.Component{
             for (let i = 0; i < 7; i++){
                 let today = new Date()
                 today.setHours(-24*(day-i) + 24*7*this.state.week)
-                desk.push(<Day key={i} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
             }
         }
         return(
@@ -117,39 +152,84 @@ class Desk extends React.Component{
                 {desk}
                 </DragDropContext>
                 <div style={rightArrowStyle} onClick={this.incrementWeek}>▶</div>
+                <TaskAdder desk_id={this.state.id} displayTaskAdder={this.state.displayTaskAdder} dateForTask={this.state.dateForTask} hideTaskAdder={this.hideTaskAdder}/>
             </div>
         )
     }
 }
 
-class Day extends React.Component{
+class TaskAdder extends React.Component{
     constructor(props){
         super(props)
 
         this.state = {
-            update: false
+            isPeriod: false,
+            dateForTaskFirst: this.props.dateForTask,
+            dateForTaskSecond: this.props.dateForTask
         }
 
+        this.setPeriod = this.setPeriod.bind(this)
+        this.unsetPeriod = this.unsetPeriod.bind(this)
+        this.setDateForTaskFirst = this.setDateForTaskFirst.bind(this)
+        this.setDateForTaskSecond = this.setDateForTaskSecond.bind(this)
         this.addTask = this.addTask.bind(this)
-        this.deleteTask = this.deleteTask.bind(this)
-        this.completeTask = this.completeTask.bind(this)
+    }
+
+    setPeriod(){
+        this.setState({
+            isPeriod: true
+        })
+    }
+
+    unsetPeriod(){
+        this.setState({
+            isPeriod: false
+        })
+    }
+
+    
+    shouldComponentUpdate(newProps){
+        if (this.state.dateForTaskFirst != newProps.dateForTask){
+            this.setState({
+                dateForTaskFirst: newProps.dateForTask,
+                dateForTaskSecond: newProps.dateForTask
+            })
+        }
+        return true;
+    }
+
+    setDateForTaskFirst(){
+        this.setState({
+            dateForTaskFirst: document.querySelector("#taskAdderForm").taskDateFirst.value
+        })
+    }
+
+    setDateForTaskSecond(){
+        this.setState({
+            dateForTaskSecond: document.querySelector("#taskAdderForm").taskDateSecond.value
+        })
     }
 
     addTask(){
-        let form = document.querySelector("#"+this.props.dayOfWeek)
+        let form = document.querySelector("#taskAdderForm")
         if (form != null){
-            let name = form.task.value
+            let task = form.task.value
             let importance = form.importance.value
             let category = form.category.value
-            if (name != "" && importance != "" && category != ""){
+            let timestampFirst = new Date(this.state.dateForTaskFirst)
+            timestampFirst = timestampFirst.getTime()
+            let timestampSecond = new Date(this.state.dateForTaskSecond)
+            timestampSecond = timestampSecond.getTime()
+            if (task != "" && importance != "" && category != ""){
                 let self = this
                 document.querySelector("#loader").style.display = "";
                 $.ajax({
                     url: "workspace/addTasks.php",
                     method: "post",
                     data: {
-                        timestamp: this.props.timestamp,
-                        task: name,
+                        timestampFirst: timestampFirst,
+                        timestampSecond: timestampSecond,
+                        task: task,
                         importance: importance,
                         category: category,
                         desk_id: this.props.desk_id
@@ -165,6 +245,112 @@ class Day extends React.Component{
                 })
             }
         }
+    }
+
+    render(){
+        let styleTaskAdder = {
+            width: "100vw",
+            height: "100vh",
+            position: "absolute", 
+            top: 0, 
+            left: 0,
+            textAlign: "center",
+            color: "black",
+            zIndex: 10,
+            display: this.props.displayTaskAdder,
+            backgroundColor: "rgba(78, 78, 78, 0.5)"
+        }
+        let styleFormTaskAdder = {
+            width: 350,
+            padding: 30,
+            position: "relative", 
+            top: "50%", 
+            left: "50%", 
+            margin: "-130px 0 0 -175px",
+            backgroundColor: "gray",
+            border: "1px solid black",
+            borderRadius: 10,
+            borderSpacing: 0,
+        }
+        let styleInputTaskAdder = {
+            width: "90%",
+            height: 30,
+            margin: "5px 0 5px 0",
+            borderRadius: 10,
+            textAlign: "center"
+        }
+        let styleCloseButton = {
+            width: 20,
+            height: 20,
+            border: "1px solid black",
+            backgroundColor: "rgba(78,78,78)",
+            cursor: "pointer",
+            position: "absolute",
+            right: 10,
+            top: 10,
+            padding: 1
+        }
+        let date = []
+        if (this.state.isPeriod == false){
+            date.push(<input key="1" name="dateType" type="radio" checked="checked" onChange={this.unsetPeriod} />)
+            date.push(<span key="2">Конкретный день</span>)
+            date.push(<input key="3" name="dateType" type="radio" checked="" onChange={this.setPeriod}/>)
+            date.push(<span key="4">Период</span>)
+            date.push(<br key="5" />)
+            date.push(<input key="6" type="date" name="taskDateFirst" value={this.state.dateForTaskFirst} onChange={this.setDateForTaskFirst}/>)
+        }
+        else {
+            date.push(<input key="1" name="dateType" type="radio" checked="" onChange={this.unsetPeriod} />)
+            date.push(<span key="2">Конкретный день</span>)
+            date.push(<input key="3" name="dateType" type="radio" checked="checked" onChange={this.setPeriod}/>)
+            date.push(<span key="4">Период</span>)
+            date.push(<br key="5" />)
+            date.push(<span key="6">Дата начала:</span>)
+            date.push(<input key="7" type="date" name="taskDateFirst" value={this.state.dateForTaskFirst} onChange={this.setDateForTaskFirst}/>)
+            date.push(<br key="8" />)
+            date.push(<span key="9">Дата окончания:</span>)
+            date.push(<input key="10" type="date" name="taskDateSecond" value={this.state.dateForTaskSecond} onChange={this.setDateForTaskSecond}/>)
+        }
+
+        let importance = ["Срочно", "Не срочно"]
+        let category = ["Дом", "Учеба", "Работа"]
+
+        let importancePrint = []
+        let categoryPrint = []
+        for (let i = 0; i < importance.length; i++){
+            importancePrint.push(<option key={i} value={"\""+importance[i]+"\""}>{importance[i]}</option>)
+        }
+        for (let i = 0; i < category.length; i++){
+            categoryPrint.push(<option key={i} value={"\""+category[i]+"\""}>{category[i]}</option>)
+        }
+        return(
+        <div style={styleTaskAdder}>
+            <form style={styleFormTaskAdder} id="taskAdderForm">
+                <div style={styleCloseButton} onClick={this.props.hideTaskAdder}>✖</div>
+                <input style={styleInputTaskAdder} type="text" name="task" placeholder="Задача" /><br /><br />
+                <span>Дата</span>
+                <br />
+                {date}<br /><br />
+                <span>Прочие параметры</span><br />
+                Категория: <select name="category">{categoryPrint}</select><br />
+                Важность: <select name="importance">{importancePrint}</select><br />
+                <input type="button" style={styleInputTaskAdder} onClick={this.addTask} value="Добавить задание" />
+            </form>
+        </div>
+        )
+    }
+}
+
+class Day extends React.Component{
+    constructor(props){
+        super(props)
+
+        this.state = {
+            update: false
+        }
+
+        this.deleteTask = this.deleteTask.bind(this)
+        this.completeTask = this.completeTask.bind(this)
     }
 
     deleteTask(id){
@@ -230,18 +416,10 @@ class Day extends React.Component{
             backgroundColor: "gray",
             padding: "5px 0px 5px 0px"
         }
-        let taskStyle = {
-            border: "none",
-            width: "78.5%",
-            height: 30,
-            borderTopLeftRadius: 10,
-            borderBottomLeftRadius: 10
-        }
         let addButtonStyle = {
-            borderTopRightRadius: "50%",
-            borderBottomRightRadius: "50%",
+            borderRadius: 10,
             border: "none",
-            width: 30,
+            width: "90%",
             height: 32,
             cursor: "pointer"
         }
@@ -271,27 +449,14 @@ class Day extends React.Component{
             async: false
         })
         
-        let importance = ["Срочно", "Не срочно"]
-        let category = ["Дом", "Учеба", "Работа"]
-
-        let importancePrint = []
-        let categoryPrint = []
-        for (let i = 0; i < importance.length; i++){
-            importancePrint.push(<option key={i} value={"\""+importance[i]+"\""}>{importance[i]}</option>)
-        }
-        for (let i = 0; i < category.length; i++){
-            categoryPrint.push(<option key={i} value={"\""+category[i]+"\""}>{category[i]}</option>)
-        }
-
+        
         return(
             <div style={dayStyle}>
                 <div style={this.props.currentDay?currentDayTopStyle:topStyle}>{this.props.dayOfWeek}<br />{this.props.date}</div>
                 <div>
                     <div style={addTaskStyle}>
                         <form id={this.props.dayOfWeek}>
-                            <input style={taskStyle} type="text" placeholder="Задача" name="task" />
-                            <input style={addButtonStyle} type="button" value="+" onClick={this.addTask}/>
-                            <Importance /><Category />
+                            <input style={addButtonStyle} type="button" value="Добавить задание" onClick={()=>this.props.showTaskAdder(this.props.date)}/>
                         </form>
                     </div>
                     <Droppable droppableId={""+this.props.timestamp}>
@@ -374,29 +539,6 @@ class Task extends React.Component{
                 </div>
             )}
             </Draggable>
-        )
-    }
-}
-
-class Importance extends React.Component{
-    render(){
-        return(
-            <select name="importance">
-                <option value="Не срочно">Не срочно</option>
-                <option value="Срочно">Срочно</option>
-            </select>
-        )
-    }
-}
-
-class Category extends React.Component{
-    render(){
-        return(
-            <select name="category">
-                <option value="Дом">Дом</option>
-                <option value="Учеба">Учеба</option>
-                <option value="Работа">Работа</option>
-            </select>
         )
     }
 }
