@@ -312,16 +312,16 @@ class TaskAdder extends React.Component{
             date.push(<input key="10" type="date" name="taskDateSecond" value={this.state.dateForTaskSecond} onChange={this.setDateForTaskSecond}/>)
         }
 
-        let importance = ["Срочно", "Не срочно"]
+        let importance = ["Срочно", "Средней важности", "Не срочно"]
         let category = ["Дом", "Учеба", "Работа"]
 
         let importancePrint = []
         let categoryPrint = []
         for (let i = 0; i < importance.length; i++){
-            importancePrint.push(<option key={i} value={"\""+importance[i]+"\""}>{importance[i]}</option>)
+            importancePrint.push(<option key={i} value={importance[i]}>{importance[i]}</option>)
         }
         for (let i = 0; i < category.length; i++){
-            categoryPrint.push(<option key={i} value={"\""+category[i]+"\""}>{category[i]}</option>)
+            categoryPrint.push(<option key={i} value={category[i]}>{category[i]}</option>)
         }
         return(
         <div style={styleTaskAdder}>
@@ -434,6 +434,7 @@ class Day extends React.Component{
             },
             success: function( result ) {
                 result = JSON.parse(result)
+                console.dir(result)
                 for (let value in result){
                     tasksPrint.push(<Task key={result[value].id} 
                         task={result[value].task}
@@ -486,6 +487,16 @@ class Task extends React.Component{
                 wordBreak: "break-all"
             }
         }
+        else if(this.props.importance == "Средней важности"){
+            importanceStyle = {
+                backgroundColor: "yellow",
+                position: "relative",
+                borderTop: "1px solid black",
+                borderBottom: "1px solid black",
+                marginTop: 20,
+                wordBreak: "break-all"
+            }
+        }
         else if(this.props.importance == "Не срочно"){
             importanceStyle = {
                 backgroundColor: "green",
@@ -499,11 +510,14 @@ class Task extends React.Component{
         let closeButtonStyle = {
             cursor: "pointer",
             position: "absolute",
-            top: 0,
             right: 0,
+            width: 20,
+            height: 20,
             display: "inline:block",
-            padding: 10
-
+            padding: 1,
+            border: "1px solid black",
+            margin: "5px 5px 0 0",
+            backgroundColor: "goldenrod"
         }
         let isCompleteStyle = {
             padding: "0 2px"
@@ -527,9 +541,8 @@ class Task extends React.Component{
                     {...provided.dragHandleProps}
                 >
                     <div style={importanceStyle}>
-                        <div style={closeButtonStyle} onClick={()=>this.props.deleteTask(this._reactInternalFiber.key)}>&#10006;</div>
+                        <div style={closeButtonStyle} onClick={()=>this.props.deleteTask(this._reactInternalFiber.key)}>✖</div>
                         <div>
-                            {this._reactInternalFiber.key}
                             <p>{this.props.category}</p>
                             <span style={isCompleteStyle}>{this.props.task}</span>
                             <br />
