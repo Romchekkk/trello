@@ -12,18 +12,18 @@ class dataBase{
         mysqli_close($this->_mysql);
     }
 
-    public function addTask($task, $importance, $category, $date, $adder_id, $desk_id){
+    public function addTask($task, $importance, $category, $date, $time, $adder_id, $desk_id){  
         $rows = 0;
         $result = mysqli_query($this->_mysql, "SELECT count(*) FROM tasks WHERE complete_date='$date' AND desk_id=$desk_id");
         while($row = mysqli_fetch_array($result)){
             $rows = $row[0];
         }
-        mysqli_query($this->_mysql, "INSERT INTO `tasks`(`task`, `importance`, `category`, `complete_date`, `adder_id`, `desk_id`, `day_order`) VALUES ('$task', '$importance', '$category', '$date', $adder_id, $desk_id, $rows)");
+        mysqli_query($this->_mysql, "INSERT INTO `tasks`(`task`, `importance`, `category`, `complete_date`, `complete_time`, `adder_id`, `desk_id`, `day_order`) VALUES ('$task', '$importance', '$category', '$date', '$time', $adder_id, $desk_id, $rows)");
     }
 
     public function getTasks($date, $desk_id){
         $tasks = array();
-        $result = mysqli_query($this->_mysql, "SELECT task, importance, category, id, is_complete, day_order FROM tasks WHERE complete_date='$date' AND desk_id=$desk_id ORDER BY day_order");
+        $result = mysqli_query($this->_mysql, "SELECT task, importance, category, id, is_complete, day_order, complete_time FROM tasks WHERE complete_date='$date' AND desk_id=$desk_id ORDER BY day_order");
         while($row = mysqli_fetch_array($result)){
             $tasks[] = array(
                 'task' => $row[0],
@@ -31,7 +31,8 @@ class dataBase{
                 'category' => $row[2],
                 'id' => $row[3],
                 'isComplete' => $row[4],
-                'dayOrder' => $row[5]
+                'dayOrder' => $row[5],
+                'completeTime' => $row[6]
             );
         }
         return $tasks;
@@ -43,6 +44,10 @@ class dataBase{
 
     public function completeTask($id){
         mysqli_query($this->_mysql, "UPDATE tasks SET is_complete=1 WHERE id=$id");
+    }
+
+    public function uncompleteTask($id){
+        mysqli_query($this->_mysql, "UPDATE tasks SET is_complete=0 WHERE id=$id");
     }
 
     public function addUser($nickname, $login, $password){

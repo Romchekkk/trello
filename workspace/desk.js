@@ -164,8 +164,11 @@ class TaskAdder extends React.Component{
 
         this.state = {
             isPeriod: false,
+            isTime: false,
             dateForTaskFirst: this.props.dateForTask,
-            dateForTaskSecond: this.props.dateForTask
+            dateForTaskSecond: this.props.dateForTask,
+            hours: 0,
+            minutes: 0
         }
 
         this.setPeriod = this.setPeriod.bind(this)
@@ -173,6 +176,10 @@ class TaskAdder extends React.Component{
         this.setDateForTaskFirst = this.setDateForTaskFirst.bind(this)
         this.setDateForTaskSecond = this.setDateForTaskSecond.bind(this)
         this.addTask = this.addTask.bind(this)
+        this.setTime = this.setTime.bind(this)
+        this.unsetTime = this.unsetTime.bind(this)
+        this.setHours = this.setHours.bind(this)
+        this.setMinutes = this.setMinutes.bind(this)
     }
 
     setPeriod(){
@@ -187,7 +194,18 @@ class TaskAdder extends React.Component{
         })
     }
 
-    
+    setTime(){
+        this.setState({
+            isTime: true
+        })
+    }
+
+    unsetTime(){
+        this.setState({
+            isTime: false
+        })
+    }
+
     shouldComponentUpdate(newProps){
         if (this.state.dateForTaskFirst != newProps.dateForTask){
             this.setState({
@@ -210,6 +228,53 @@ class TaskAdder extends React.Component{
         })
     }
 
+    setHours(){
+        let h = Math.ceil(document.querySelector("#taskAdderForm").timeHours.value)
+        if (h >= 0 && h <= 23){
+            this.setState({
+                hours: h
+            })
+        }
+        else{
+            if (h > 23){
+                this.setState({
+                    hours: 0
+                })
+            }
+            else{
+                this.setState({
+                    hours: 23
+                })
+            }
+        }
+    }
+
+    setMinutes(){
+        let m = Math.ceil(document.querySelector("#taskAdderForm").timeMinutes.value)
+        if (m >= 0 && m <= 59){
+            this.setState({
+                minutes: m
+            })
+        }
+        else{
+            if (m > 59){
+                let h = this.state.hours + 1
+                if (h > 23){
+                    h = 0
+                }
+                this.setState({
+                    hours: h,
+                    minutes: 0
+                })
+            }
+            else{
+                this.setState({
+                    minutes: 59
+                })
+            }
+        }
+    }
+
     addTask(){
         let form = document.querySelector("#taskAdderForm")
         if (form != null){
@@ -218,8 +283,15 @@ class TaskAdder extends React.Component{
             let category = form.category.value
             let timestampFirst = new Date(this.state.dateForTaskFirst)
             timestampFirst = timestampFirst.getTime()
-            let timestampSecond = new Date(this.state.dateForTaskSecond)
-            timestampSecond = timestampSecond.getTime()
+            let timestampSecond = ""
+            if (this.state.isPeriod == true){
+                timestampSecond = new Date(this.state.dateForTaskSecond)
+                timestampSecond = timestampSecond.getTime()
+            }
+            let time = "null"
+            if (this.state.isTime == true){
+                time = ((this.state.hours+"").length==1?"0"+this.state.hours:this.state.hours)+":"+((this.state.minutes+"").length==1?"0"+this.state.minutes:this.state.minutes)
+            }
             if (task != "" && importance != "" && category != ""){
                 let self = this
                 document.querySelector("#loader").style.display = "";
@@ -232,6 +304,7 @@ class TaskAdder extends React.Component{
                         task: task,
                         importance: importance,
                         category: category,
+                        complete_time: time,
                         desk_id: this.props.desk_id
                     },
                     success: function() {
@@ -290,6 +363,9 @@ class TaskAdder extends React.Component{
             top: 10,
             padding: 1
         }
+        let styleNumberButton = {
+            width: 40
+        }
         let date = []
         if (this.state.isPeriod == false){
             date.push(<input key="1" name="dateType" type="radio" checked="checked" onChange={this.unsetPeriod} />)
@@ -311,7 +387,19 @@ class TaskAdder extends React.Component{
             date.push(<span key="9">Дата окончания:</span>)
             date.push(<input key="10" type="date" name="taskDateSecond" value={this.state.dateForTaskSecond} onChange={this.setDateForTaskSecond}/>)
         }
-
+        let time = []
+        if (this.state.isTime == false){
+            time.push(<input key="1" name="timeType" type="checkbox" checked="checked" onChange={this.setTime} />)
+            time.push(<span key="2">Не указано</span>)
+        }
+        else{
+            time.push(<input key="1" name="timeType" type="checkbox" checked="" onChange={this.unsetTime} />)
+            time.push(<span key="2">Не указано</span>)
+            time.push(<br key="3"/>)
+            time.push(<input key="4" style={styleNumberButton} name="timeHours" type="number" value={this.state.hours} onChange={this.setHours}/>)
+            time.push(<span key="5">:</span>)
+            time.push(<input key="6" style={styleNumberButton} name="timeMinutes" type="number" value={this.state.minutes} onChange={this.setMinutes}/>)
+        }
         let importance = ["Срочно", "Средней важности", "Не срочно"]
         let category = ["Дом", "Учеба", "Работа"]
 
@@ -330,7 +418,11 @@ class TaskAdder extends React.Component{
                 <input style={styleInputTaskAdder} type="text" name="task" placeholder="Задача" /><br /><br />
                 <span>Дата</span>
                 <br />
-                {date}<br /><br />
+                {date}
+                <br /><br />
+                <span>Время выполнения</span><br />
+                {time}
+                <br /><br />
                 <span>Прочие параметры</span><br />
                 Категория: <select name="category">{categoryPrint}</select><br />
                 Важность: <select name="importance">{importancePrint}</select><br />
@@ -351,6 +443,7 @@ class Day extends React.Component{
 
         this.deleteTask = this.deleteTask.bind(this)
         this.completeTask = this.completeTask.bind(this)
+        this.uncompleteTask = this.uncompleteTask.bind(this)
     }
 
     deleteTask(id){
@@ -378,6 +471,26 @@ class Day extends React.Component{
         document.querySelector("#loader").style.display = "";
         $.ajax({
             url: "workspace/completeTask.php",
+            method: "post",
+            data: {
+                id: id
+            },
+            success: function() {
+                document.querySelector("#loader").style.display = "none";
+                let update = !self.state.update
+                self.setState({
+                    update: update
+                })
+            },
+            async: false
+        })
+    }
+
+    uncompleteTask(id){
+        let self = this
+        document.querySelector("#loader").style.display = "";
+        $.ajax({
+            url: "workspace/uncompleteTask.php",
             method: "post",
             data: {
                 id: id
@@ -434,7 +547,6 @@ class Day extends React.Component{
             },
             success: function( result ) {
                 result = JSON.parse(result)
-                console.dir(result)
                 for (let value in result){
                     tasksPrint.push(<Task key={result[value].id} 
                         task={result[value].task}
@@ -442,8 +554,10 @@ class Day extends React.Component{
                         category={result[value].category}
                         deleteTask={self.deleteTask}
                         completeTask={self.completeTask}
+                        uncompleteTask={self.uncompleteTask}
                         isComplete={result[value].isComplete}
                         dayOrder={result[value].dayOrder}
+                        completeTime={result[value].completeTime}
                     />)
                 }
             },
@@ -476,35 +590,49 @@ class Day extends React.Component{
 
 class Task extends React.Component{
     render(){
-        let importanceStyle
-        if (this.props.importance == "Срочно"){
-            importanceStyle = {
-                backgroundColor: "red",
+        let styleTask
+        let completer = <input type="button" onClick={()=>this.props.completeTask(this._reactInternalFiber.key)} value="Завершить"/>
+        if (this.props.isComplete == true){
+            styleTask = {
+                backgroundColor: "aqua",
                 position: "relative",
                 borderTop: "1px solid black",
                 borderBottom: "1px solid black",
                 marginTop: 20,
                 wordBreak: "break-all"
             }
+            completer = <input type="button" onClick={()=>this.props.uncompleteTask(this._reactInternalFiber.key)} value="Отменить"/>
         }
-        else if(this.props.importance == "Средней важности"){
-            importanceStyle = {
-                backgroundColor: "yellow",
-                position: "relative",
-                borderTop: "1px solid black",
-                borderBottom: "1px solid black",
-                marginTop: 20,
-                wordBreak: "break-all"
+        else{
+            if (this.props.importance == "Срочно"){
+                styleTask = {
+                    backgroundColor: "red",
+                    position: "relative",
+                    borderTop: "1px solid black",
+                    borderBottom: "1px solid black",
+                    marginTop: 20,
+                    wordBreak: "break-all"
+                }
             }
-        }
-        else if(this.props.importance == "Не срочно"){
-            importanceStyle = {
-                backgroundColor: "green",
-                position: "relative",
-                borderTop: "1px solid black",
-                borderBottom: "1px solid black",
-                marginTop: 20,
-                wordBreak: "break-all"
+            else if(this.props.importance == "Средней важности"){
+                styleTask = {
+                    backgroundColor: "yellow",
+                    position: "relative",
+                    borderTop: "1px solid black",
+                    borderBottom: "1px solid black",
+                    marginTop: 20,
+                    wordBreak: "break-all"
+                }
+            }
+            else if(this.props.importance == "Не срочно"){
+                styleTask = {
+                    backgroundColor: "green",
+                    position: "relative",
+                    borderTop: "1px solid black",
+                    borderBottom: "1px solid black",
+                    marginTop: 20,
+                    wordBreak: "break-all"
+                }
             }
         }
         let closeButtonStyle = {
@@ -519,16 +647,11 @@ class Task extends React.Component{
             margin: "5px 5px 0 0",
             backgroundColor: "goldenrod"
         }
-        let isCompleteStyle = {
-            padding: "0 2px"
-        }
-        let completer = <input type="button" onClick={()=>this.props.completeTask(this._reactInternalFiber.key)} value="Завершить &#10004;"/>
-        if (this.props.isComplete == true){
-            isCompleteStyle = {
-                textDecoration: "line-through",
-                padding: "0 2px"
-            }
-            completer = null
+        let time = []
+        if (this.props.completeTime != "null"){
+            time.push(<br key="1" />)
+            time.push(<span key="2">{this.props.completeTime}</span>)
+            time.push(<br key="3" />)
         }
         return(
             <Draggable draggableId={this._reactInternalFiber.key}
@@ -540,11 +663,13 @@ class Task extends React.Component{
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
                 >
-                    <div style={importanceStyle}>
+                    <div style={styleTask}>
                         <div style={closeButtonStyle} onClick={()=>this.props.deleteTask(this._reactInternalFiber.key)}>✖</div>
                         <div>
                             <p>{this.props.category}</p>
-                            <span style={isCompleteStyle}>{this.props.task}</span>
+                            <span>{this.props.task}</span>
+                            <br />
+                            {time}
                             <br />
                             {completer}
                         </div>
