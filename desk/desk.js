@@ -11,7 +11,7 @@ class Desk extends React.Component{
 
         this.state = {
             week: 0,
-            id: 1,
+            id: this.props.deskId,
             update: false,
             displayTaskAdder: "none",
             dateForTask: date
@@ -21,7 +21,14 @@ class Desk extends React.Component{
         this.incrementWeek = this.incrementWeek.bind(this)
         this.showTaskAdder = this.showTaskAdder.bind(this)
         this.hideTaskAdder = this.hideTaskAdder.bind(this)
+        this.needUpdate = this.needUpdate.bind(this)
+    }
 
+    needUpdate(){
+        let update = !this.state.update
+        this.setState({
+            update: update
+        })
     }
 
     decrementWeek(){
@@ -47,7 +54,7 @@ class Desk extends React.Component{
             document.querySelector("#loader").style.display = "";
             let self = this
             $.ajax({
-                url: "workspace/dragTask.php",
+                url: "desk/dragTask.php",
                 method: "post",
                 data: {
                     timestamp: destination.droppableId,
@@ -152,7 +159,7 @@ class Desk extends React.Component{
                 {desk}
                 </DragDropContext>
                 <div style={rightArrowStyle} onClick={this.incrementWeek}>▶</div>
-                <TaskAdder desk_id={this.state.id} displayTaskAdder={this.state.displayTaskAdder} dateForTask={this.state.dateForTask} hideTaskAdder={this.hideTaskAdder}/>
+                <TaskAdder desk_id={this.state.id} needUpdate={this.needUpdate} displayTaskAdder={this.state.displayTaskAdder} dateForTask={this.state.dateForTask} hideTaskAdder={this.hideTaskAdder}/>
             </div>
         )
     }
@@ -293,10 +300,10 @@ class TaskAdder extends React.Component{
                 time = ((this.state.hours+"").length==1?"0"+this.state.hours:this.state.hours)+":"+((this.state.minutes+"").length==1?"0"+this.state.minutes:this.state.minutes)
             }
             if (task != "" && importance != "" && category != ""){
+                document.querySelector("#loader").style.display = ""
                 let self = this
-                document.querySelector("#loader").style.display = "";
                 $.ajax({
-                    url: "workspace/addTasks.php",
+                    url: "desk/addTasks.php",
                     method: "post",
                     data: {
                         timestampFirst: timestampFirst,
@@ -308,11 +315,8 @@ class TaskAdder extends React.Component{
                         desk_id: this.props.desk_id
                     },
                     success: function() {
-                        document.querySelector("#loader").style.display = "none";
-                        let update = !self.state.update
-                        self.setState({
-                            update: update
-                        })
+                        document.querySelector("#loader").style.display = "none"
+                        self.props.needUpdate()
                     },
                     async: false
                 })
@@ -339,7 +343,7 @@ class TaskAdder extends React.Component{
             position: "relative", 
             top: "50%", 
             left: "50%", 
-            margin: "-130px 0 0 -175px",
+            margin: "-250px 0 0 -175px",
             backgroundColor: "gray",
             border: "1px solid black",
             borderRadius: 10,
@@ -450,7 +454,7 @@ class Day extends React.Component{
         let self = this
         document.querySelector("#loader").style.display = "";
         $.ajax({
-            url: "workspace/deleteTask.php",
+            url: "desk/deleteTask.php",
             method: "post",
             data: {
                 id: id
@@ -470,7 +474,7 @@ class Day extends React.Component{
         let self = this
         document.querySelector("#loader").style.display = "";
         $.ajax({
-            url: "workspace/completeTask.php",
+            url: "desk/completeTask.php",
             method: "post",
             data: {
                 id: id
@@ -490,7 +494,7 @@ class Day extends React.Component{
         let self = this
         document.querySelector("#loader").style.display = "";
         $.ajax({
-            url: "workspace/uncompleteTask.php",
+            url: "desk/uncompleteTask.php",
             method: "post",
             data: {
                 id: id
@@ -539,7 +543,7 @@ class Day extends React.Component{
         let tasksPrint = []
         let self = this
         $.ajax({
-            url: "workspace/getTasks.php",
+            url: "desk/getTasks.php",
             method: "post",
             data: {
                 timestamp: this.props.timestamp,

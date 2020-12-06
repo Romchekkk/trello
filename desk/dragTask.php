@@ -10,4 +10,8 @@ foreach (array('timestamp', 'id', 'destination', 'target') as $parameterName) {
     ?$_POST[$parameterName]
     :"";
 }
-$mysql->dragTask(date("Y.m.d", ceil($timestamp/1000)), $id, $destination, $target);
+$today = date('Y-m-d');
+$addDayFirst = date('Y-m-d', ceil($timestamp/1000));
+if ($today <= $addDayFirst) {
+    $mysql->dragTask(date("Y.m.d", ceil($timestamp/1000)), $id, $destination, $target);
+}
