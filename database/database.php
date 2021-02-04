@@ -102,4 +102,16 @@ class dataBase{
             }
         }
     }
+
+    public function searchDesks($text){
+        $desks = array();
+        $result = mysqli_query($this->_mysql, "SELECT id, desk_name, access_rights FROM desks WHERE INSTR(desk_name, '$text')=1 ORDER BY desk_name");
+        while ($row = mysqli_fetch_array($result)) {
+            $desks[] = array(
+                'id' => $row[0],
+                'desk_name' => $row[1]
+            );
+        }
+        return $desks;
+    }
 }

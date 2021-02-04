@@ -48,6 +48,7 @@ class Site extends React.Component{
         this.setState({
             deskId: id
         })
+        console.dir(id)
     }
 
     unsetDeskId(){
