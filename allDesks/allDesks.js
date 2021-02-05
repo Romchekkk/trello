@@ -27,6 +27,7 @@ class AllDesks extends React.Component{
         return(
             <div>
                 <Search needUpdate={this.needUpdate} setDeskId={this.props.setDeskId}/>
+                <DeskViewer />
             </div>
         )
     }
@@ -154,6 +155,24 @@ class Search extends React.Component{
                     <div style={glareStyle}></div>
                 </div>
                 {test}
+            </div>
+        )
+    }
+}
+
+class DeskViewer extends React.Component{
+    constructor(props){
+        super(props)
+
+        this.state = {
+
+        }
+    }
+
+    render(){
+        return(
+            <div>
+                
             </div>
         )
     }

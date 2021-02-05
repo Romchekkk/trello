@@ -1,3 +1,4 @@
+// Чат, прикреплённый к доске
 class Chat extends React.Component{
     render(){
         let chatStyle={

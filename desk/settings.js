@@ -1,3 +1,4 @@
+// Настройки доски
 class Settings extends React.Component{
     render(){
         let settingsStyle={

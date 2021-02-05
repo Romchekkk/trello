@@ -1,7 +1,9 @@
+// Основна сайта
 class Site extends React.Component{
     constructor(props){
         super(props)
 
+        // Проверка авторизации пользователя
         let username = false
         let isAuthorised = true
         $.ajax({
@@ -19,8 +21,14 @@ class Site extends React.Component{
         })
 
         this.state = {
+            // Авторизован ли пользователь
             isAuthorised: isAuthorised,
+            
+            // Имя пользователя
             username: username,
+
+            // ID доски, которая просматривается
+            // false - никакая доска не просматривается
             deskId: false
         }
 
@@ -30,6 +38,7 @@ class Site extends React.Component{
         this.unsetDeskId = this.unsetDeskId.bind(this)
     }
 
+    // Установка имени пользователя
     setUsername(username){
         this.setState({
             username: username,
@@ -37,6 +46,7 @@ class Site extends React.Component{
         })
     }
 
+    // Удаление имени пользователя
     unsetUsername(){
         this.setState({
             username: false,
@@ -44,6 +54,7 @@ class Site extends React.Component{
         })
     }
 
+    // Установка ID просматриваемой доски
     setDeskId(id){
         this.setState({
             deskId: id
@@ -51,6 +62,7 @@ class Site extends React.Component{
         console.dir(id)
     }
 
+    // Удаление ID просматриваемой доски
     unsetDeskId(){
         this.setState({
             deskId: false
@@ -59,6 +71,8 @@ class Site extends React.Component{
 
     render(){
         let renderData = []
+
+        // Если пользователь авторизован
         if (this.state.isAuthorised){
             renderData.push(<Header key="Header" username={this.state.username} />)
             if (this.state.deskId != false){
@@ -68,6 +82,8 @@ class Site extends React.Component{
                 renderData.push(<AllDesks key="AllDesks" setDeskId={this.setDeskId} />)
             }
         }
+
+        // Если пользователь не авторизован
         else{
             renderData.push(<Header key="Header" username={this.state.username} />)
             renderData.push(<RegAuth key="RegAuth" setUsername={this.setUsername} unsetUsername={this.unsetUsername} />)
@@ -81,6 +97,7 @@ class Site extends React.Component{
     }
 }
 
+// Верхняя часть сайта
 class Header extends React.Component{
     render(){
         let styleMain = {
@@ -107,6 +124,7 @@ class Header extends React.Component{
     }
 }
 
+// Рабочее пространство пользователя (доска, её настройки и чат)
 class Workspace extends React.Component{
     render(){
         return(
@@ -119,6 +137,7 @@ class Workspace extends React.Component{
     }
 }
 
+// Меню авторизации/регистрации
 class RegAuth extends React.Component{
     render(){
         return(

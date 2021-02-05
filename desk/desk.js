@@ -1,19 +1,43 @@
+// Необходимо для возможности перетаскивания заданий
 const {DragDropContext, Draggable, Droppable } = ReactBeautifulDnd
 
+// Доска
 class Desk extends React.Component{
     constructor(props){
         super(props)
 
+        // Получение текущей даты в необходимом формате
         let today = new Date()
-        let date = today.getFullYear() + "-" +
+        let date = 
+
+        // Год
+        today.getFullYear() + "-" +
+
+        // Месяц
         (((Math.round(today.getMonth())+1)+"").length==1?('0'+(Math.round(today.getMonth())+1)):(Math.round(today.getMonth())+1)) + "-" +
+
+        // День
         (((today.getDate()+"").length==1)?('0'+today.getDate()):(today.getDate()))
 
         this.state = {
+            // Просматривая неделя 
+            // 0 - текущая неделя
+            // 1 - следующая неделя (и тд)
+            // -1 - предыдущая неделя (и тд)
             week: 0,
+
+            // ID текущей доски
             id: this.props.deskId,
+
+            // Костыль. Необходим для указания приложению о необходимости обновить компоненты доски
             update: false,
+
+            // Отображение меню добавления задач
+            // "none" - не отображать
+            // "block" - отображать
             displayTaskAdder: "none",
+
+            // Дата в меню добавления задач по умолчанию
             dateForTask: date
         }
 
@@ -24,6 +48,7 @@ class Desk extends React.Component{
         this.needUpdate = this.needUpdate.bind(this)
     }
 
+    // Костыль. Необходима для указания приложению о необходимости обновить компоненты
     needUpdate(){
         let update = !this.state.update
         this.setState({
@@ -31,6 +56,7 @@ class Desk extends React.Component{
         })
     }
 
+    // Переход на предыдущую неделю от открытой
     decrementWeek(){
         let curWeek = this.state.week
         this.setState({
@@ -38,6 +64,7 @@ class Desk extends React.Component{
         })
     }
 
+    // Переход на следующую неделю от открытой
     incrementWeek(){
         let curWeek = this.state.week
         this.setState({
@@ -45,37 +72,60 @@ class Desk extends React.Component{
         })
     }
 
+    // Завершение перетаскивания
     onDragEnd = result => {
+
+        // Параметры перетаскивания (что и куда)
         const { source, destination } = result
+
+        // Если конечной цель переноса нет - вернуть обратно
         if (!destination) {
             return
         }
+
+        // Если цель переноса есть
         else {
+
+            // Включаем заглушку
             document.querySelector("#loader").style.display = "";
+
+            // Отправляем запрос в базу данных на изменение расположения задания
             let self = this
             $.ajax({
                 url: "desk/dragTask.php",
                 method: "post",
                 data: {
+                    
+                    // Дата, на которую переносится задание
                     timestamp: destination.droppableId,
+
+                    // Место в порядке заданий
                     destination: destination.index,
+
+                    // Дата, с которой переносится задание
                     target: source.index,
+
+                    // Какое задание переносится (его ID в базе данных)
                     id: result.draggableId
                 },
                 success: function() {
+
+                    // Отключаем заглушку
                     document.querySelector("#loader").style.display = "none";
-                    let update = !self.state.update
-                    self.setState({
-                        update: update
-                    })
+
+                    // Обновляем компоненты
+                    self.needUpdate()
                 },
                 async: false
             })
         }
     };
 
+    // Отображаем меню добавления заданий
     showTaskAdder(date){
         let months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+        
+        // Меняем формат даты на необходимый
         let regexp = new RegExp(/[^\d]+/, 'ui')
         date = date.replace(regexp, '-'+months.indexOf(date.match(regexp)[0].trim())+'-').split(/-/)
         date[1] = Math.round(date[1])+1
@@ -86,12 +136,14 @@ class Desk extends React.Component{
             date[0] = '0'+date[0]
         }
         date = date[2]+"-"+date[1]+"-"+date[0]
+
         this.setState({
             displayTaskAdder: "block",
             dateForTask: date
         })
     }
 
+    // Выключаем меню добавления заданий
     hideTaskAdder(date){
         this.setState({
             displayTaskAdder: "none",
@@ -124,27 +176,40 @@ class Desk extends React.Component{
             cursor: "pointer"
         }
 
+        // Получаем текущую дату в удобном для чтения виде
         let now = new Date()
         let days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
         let months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
         let day = now.getDay() == 0 ? 6 : now.getDay()-1
+
+        // Собираем компоненты дней недели
         let desk = []
+
+        // Если неделя текущая
         if (this.state.week == 0){
             for (let i = 0; i < 7; i++){
                 let today = new Date()
+
+                // Если собираем компонент дня, который идёт до сегодняшнего
                 if (i < day){
                     today.setHours(-24*(day-i))
                     desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
+
+                // Если собираем компонент сегодняшнего дня
                 else if(i == day){
                     desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={true} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
+
+                // Если собираем компонент дня, который идёт после сегодняшнего
                 else{
                     today.setHours(24*(i-day))
                     desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
             }
         }
+
+        // Если неделя не текущая
         else{
             for (let i = 0; i < 7; i++){
                 let today = new Date()
@@ -152,6 +217,7 @@ class Desk extends React.Component{
                 desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
             }
         }
+
         return(
             <div style={weekStyle}>
                 <div style={leftArrowStyle} onClick={this.decrementWeek}>◀</div>
@@ -165,15 +231,27 @@ class Desk extends React.Component{
     }
 }
 
+// Меню добавления заданий
 class TaskAdder extends React.Component{
     constructor(props){
         super(props)
 
         this.state = {
+
+            // Установка задания на несколько дней
             isPeriod: false,
+
+            // Установка задания на конкретное время
             isTime: false,
+
+            // Начальная дата задания
             dateForTaskFirst: this.props.dateForTask,
+
+            // Конечная дата задания (по умолчанию такая же, как и начальная)
+            // Если задание устанавливается на несколько дней, то это состояние принимает значение конечной даты
             dateForTaskSecond: this.props.dateForTask,
+
+            // Конкретное время задания
             hours: 0,
             minutes: 0
         }
@@ -189,30 +267,35 @@ class TaskAdder extends React.Component{
         this.setMinutes = this.setMinutes.bind(this)
     }
 
+    // Установка периода задания
     setPeriod(){
         this.setState({
             isPeriod: true
         })
     }
 
+    // Удаление периода задания
     unsetPeriod(){
         this.setState({
             isPeriod: false
         })
     }
 
+    // Установка конкретного времени завершения задания
     setTime(){
         this.setState({
             isTime: true
         })
     }
 
+    // Удаление конкретного времени завершения задания
     unsetTime(){
         this.setState({
             isTime: false
         })
     }
 
+    // Установка новой даты для задания в меню создания, если необходимо
     shouldComponentUpdate(newProps){
         if (this.state.dateForTaskFirst != newProps.dateForTask){
             this.setState({
@@ -223,18 +306,21 @@ class TaskAdder extends React.Component{
         return true;
     }
 
+    // Установка начальной даты задания
     setDateForTaskFirst(){
         this.setState({
             dateForTaskFirst: document.querySelector("#taskAdderForm").taskDateFirst.value
         })
     }
 
+    // Установка конечной даты задания
     setDateForTaskSecond(){
         this.setState({
             dateForTaskSecond: document.querySelector("#taskAdderForm").taskDateSecond.value
         })
     }
 
+    // Установка времени (во сколько часов) завершения задания
     setHours(){
         let h = Math.ceil(document.querySelector("#taskAdderForm").timeHours.value)
         if (h >= 0 && h <= 23){
@@ -256,6 +342,7 @@ class TaskAdder extends React.Component{
         }
     }
 
+    // Установка времени (во сколько минут) завершения задания
     setMinutes(){
         let m = Math.ceil(document.querySelector("#taskAdderForm").timeMinutes.value)
         if (m >= 0 && m <= 59){
@@ -282,9 +369,12 @@ class TaskAdder extends React.Component{
         }
     }
 
+    // Добавление задания в базу данных
     addTask(){
         let form = document.querySelector("#taskAdderForm")
         if (form != null){
+
+            // Сбор информации о задании (название, важность, категория, дата и время выполнения)
             let task = form.task.value
             let importance = form.importance.value
             let category = form.category.value
@@ -297,25 +387,44 @@ class TaskAdder extends React.Component{
             }
             let time = "null"
             if (this.state.isTime == true){
-                time = ((this.state.hours+"").length==1?"0"+this.state.hours:this.state.hours)+":"+((this.state.minutes+"").length==1?"0"+this.state.minutes:this.state.minutes)
+                time = 
+                ((this.state.hours+"").length==1?"0"+this.state.hours:this.state.hours)+":"+
+                ((this.state.minutes+"").length==1?"0"+this.state.minutes:this.state.minutes)
             }
+
+            // Проверка корректности указанных данных
             if (task != "" && importance != "" && category != ""){
+
+                // Включаем заглушку
                 document.querySelector("#loader").style.display = ""
+
+                // Добавляем задание в базу данных
                 let self = this
                 $.ajax({
                     url: "desk/addTasks.php",
                     method: "post",
                     data: {
+                        
+                        // Начальная и конечная даты
                         timestampFirst: timestampFirst,
                         timestampSecond: timestampSecond,
+
+                        // Текст задания, важность и категория
                         task: task,
                         importance: importance,
                         category: category,
+
+                        // Время завершения задания
                         complete_time: time,
+
+                        // ID доски, в которую записывается задание
                         desk_id: this.props.desk_id
                     },
                     success: function() {
+                        // Отключаем заглушку
                         document.querySelector("#loader").style.display = "none"
+
+                        // Обновляем компоненты
                         self.props.needUpdate()
                     },
                     async: false
@@ -370,7 +479,11 @@ class TaskAdder extends React.Component{
         let styleNumberButton = {
             width: 40
         }
+
+        // Дата задания (или период)
         let date = []
+
+        // Если период включен
         if (this.state.isPeriod == false){
             date.push(<input key="1" name="dateType" type="radio" checked="checked" onChange={this.unsetPeriod} />)
             date.push(<span key="2">Конкретный день</span>)
@@ -379,6 +492,8 @@ class TaskAdder extends React.Component{
             date.push(<br key="5" />)
             date.push(<input key="6" type="date" name="taskDateFirst" value={this.state.dateForTaskFirst} onChange={this.setDateForTaskFirst}/>)
         }
+
+        // Если период выключен
         else {
             date.push(<input key="1" name="dateType" type="radio" checked="" onChange={this.unsetPeriod} />)
             date.push(<span key="2">Конкретный день</span>)
@@ -391,11 +506,17 @@ class TaskAdder extends React.Component{
             date.push(<span key="9">Дата окончания:</span>)
             date.push(<input key="10" type="date" name="taskDateSecond" value={this.state.dateForTaskSecond} onChange={this.setDateForTaskSecond}/>)
         }
+
+        // Конкретно время завершения
         let time = []
+
+        // Если конкретное время включено
         if (this.state.isTime == false){
             time.push(<input key="1" name="timeType" type="checkbox" checked="checked" onChange={this.setTime} />)
             time.push(<span key="2">Не указано</span>)
         }
+
+        // Если конкретное время выключено
         else{
             time.push(<input key="1" name="timeType" type="checkbox" checked="" onChange={this.unsetTime} />)
             time.push(<span key="2">Не указано</span>)
@@ -404,9 +525,10 @@ class TaskAdder extends React.Component{
             time.push(<span key="5">:</span>)
             time.push(<input key="6" style={styleNumberButton} name="timeMinutes" type="number" value={this.state.minutes} onChange={this.setMinutes}/>)
         }
+
+        // Важность и категории
         let importance = ["Срочно", "Средней важности", "Не срочно"]
         let category = ["Дом", "Учеба", "Работа"]
-
         let importancePrint = []
         let categoryPrint = []
         for (let i = 0; i < importance.length; i++){
@@ -415,6 +537,7 @@ class TaskAdder extends React.Component{
         for (let i = 0; i < category.length; i++){
             categoryPrint.push(<option key={i} value={category[i]}>{category[i]}</option>)
         }
+
         return(
         <div style={styleTaskAdder}>
             <form style={styleFormTaskAdder} id="taskAdderForm">
@@ -437,11 +560,13 @@ class TaskAdder extends React.Component{
     }
 }
 
+// День
 class Day extends React.Component{
     constructor(props){
         super(props)
 
         this.state = {
+            // Костыль. Необходим для указания приложению о необходимости обновить компонент дня
             update: false
         }
 
@@ -450,17 +575,28 @@ class Day extends React.Component{
         this.uncompleteTask = this.uncompleteTask.bind(this)
     }
 
+    // Удаления задания из базы данных
     deleteTask(id){
         let self = this
+
+        // Включаем заглушку
         document.querySelector("#loader").style.display = "";
+
+        // Выполняем запрос на удаление
         $.ajax({
             url: "desk/deleteTask.php",
             method: "post",
             data: {
+                
+                // ID задания, которое нужно удалить
                 id: id
             },
             success: function() {
+
+                // Выключаем заглушку
                 document.querySelector("#loader").style.display = "none";
+
+                // Обновляем компонент
                 let update = !self.state.update
                 self.setState({
                     update: update
@@ -470,17 +606,28 @@ class Day extends React.Component{
         })
     }
 
+    // Установка отметки о выполнении задания
     completeTask(id){
         let self = this
+
+        // Включаем заглушку
         document.querySelector("#loader").style.display = "";
+
+        // Отправляем запрос на установку отметки
         $.ajax({
             url: "desk/completeTask.php",
             method: "post",
             data: {
+
+                // ID задания, которому нужно установить отметку
                 id: id
             },
             success: function() {
+
+                // Выключаем заглушку
                 document.querySelector("#loader").style.display = "none";
+
+                // Обновляем компонент
                 let update = !self.state.update
                 self.setState({
                     update: update
@@ -490,17 +637,28 @@ class Day extends React.Component{
         })
     }
 
+    // Удаление отметки о выполнении задания
     uncompleteTask(id){
         let self = this
+
+        // Включаем заглушку
         document.querySelector("#loader").style.display = "";
+
+        // Отправляем запрос на удаление отметки
         $.ajax({
             url: "desk/uncompleteTask.php",
             method: "post",
             data: {
+                
+                // ID задания, которому нужно удалить отметку
                 id: id
             },
             success: function() {
+                
+                // Выключаем заглушку
                 document.querySelector("#loader").style.display = "none";
+                
+                // Обновляем компонент
                 let update = !self.state.update
                 self.setState({
                     update: update
@@ -540,16 +698,26 @@ class Day extends React.Component{
             height: 32,
             cursor: "pointer"
         }
+
+        // Собираем задания дня
         let tasksPrint = []
         let self = this
+
+        // Отправляем запрос на список заданий дня
         $.ajax({
             url: "desk/getTasks.php",
             method: "post",
             data: {
+
+                // День
                 timestamp: this.props.timestamp,
+                
+                // ID текущей доски
                 desk_id: this.props.desk_id
             },
             success: function( result ) {
+
+                // Обрабатываем полученные задания и создаем их компоненты
                 result = JSON.parse(result)
                 for (let value in result){
                     tasksPrint.push(<Task key={result[value].id} 
@@ -592,10 +760,15 @@ class Day extends React.Component{
     }
 }
 
+// Задание
 class Task extends React.Component{
     render(){
         let styleTask
+
+        // Кнопка завершения
         let completer = <input type="button" onClick={()=>this.props.completeTask(this._reactInternalFiber.key)} value="Завершить"/>
+
+        // Если задание уже завершено, то добавляем кнопку отмены
         if (this.props.isComplete == true){
             styleTask = {
                 backgroundColor: "aqua",
@@ -607,6 +780,8 @@ class Task extends React.Component{
             }
             completer = <input type="button" onClick={()=>this.props.uncompleteTask(this._reactInternalFiber.key)} value="Отменить"/>
         }
+
+        // Если задание не завершено, то даём ему окрас, соответствующий важности
         else{
             if (this.props.importance == "Срочно"){
                 styleTask = {
@@ -651,12 +826,15 @@ class Task extends React.Component{
             margin: "5px 5px 0 0",
             backgroundColor: "goldenrod"
         }
+
+        // Время завершения (если указано)
         let time = []
         if (this.props.completeTime != "null"){
             time.push(<br key="1" />)
             time.push(<span key="2">{this.props.completeTime}</span>)
             time.push(<br key="3" />)
         }
+        
         return(
             <Draggable draggableId={this._reactInternalFiber.key}
             key={this._reactInternalFiber.key}
