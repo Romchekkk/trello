@@ -114,4 +114,30 @@ class dataBase{
         }
         return $desks;
     }
+
+    public function getDesks($id, $type){
+        $desks = array();
+        $result = mysqli_query($this->_mysql, "SELECT id, desk_name, last_date FROM (SELECT * FROM user_desks_memory WHERE user_id=$id AND type='$type') udm JOIN desks ON udm.desk_id=desks.id ORDER BY last_date DESC");
+        while ($row = mysqli_fetch_array($result)) {
+            $desks[] = array(
+                'id' => $row[0],
+                'desk_name' => $row[1],
+            );
+        }
+        while ($type == "history" && count($desks) > 6){
+            mysqli_query($this->_mysql, "DELETE FROM user_desks_memory WHERE user_id=$id AND desk_id=".$desks[count($desks)-1]["id"]);
+            unset($desks[count($desks)-1]);
+        }
+        return $desks;
+    }
+
+    public function addDeskToHistory($id, $desk_id){
+        $result = mysqli_query($this->_mysql, "SELECT * FROM user_desks_memory WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
+        if (mysqli_fetch_array($result)){
+            mysqli_query($this->_mysql, "UPDATE `user_desks_memory` SET `last_date`=DEFAULT WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
+        }
+        else{
+            mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
+        }
+    }
 }

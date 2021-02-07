@@ -18,16 +18,75 @@ class AllDesks extends React.Component{
         super(props)
 
         this.state = {
-            update: false
+            update: false,
+            desksOwn: 2,
+            desksHistory: 3,
+            desksFavorite: 1,
         }
 
+        this.openFavorite = this.openFavorite.bind(this)
+        this.openHistory = this.openHistory.bind(this)
+        this.openOwn = this.openOwn.bind(this)
+    }
+
+    openHistory(){
+        if (this.state.desksFavorite > this.state.desksOwn){
+            this.setState({
+                desksOwn: 1,
+                desksHistory: 3,
+                desksFavorite: 2,
+            })
+        }
+        else{
+            this.setState({
+                desksOwn: 2,
+                desksHistory: 3,
+                desksFavorite: 1,
+            })
+        }
+    }
+
+    openFavorite(){
+        if (this.state.desksOwn > this.state.desksHistory){
+            this.setState({
+                desksOwn: 2,
+                desksHistory: 1,
+                desksFavorite: 3,
+            })
+        }
+        else{
+            this.setState({
+                desksOwn: 1,
+                desksHistory: 2,
+                desksFavorite: 3,
+            })
+        }
+    }
+
+    openOwn(){
+        if (this.state.desksFavorite > this.state.desksHistory){
+            this.setState({
+                desksOwn: 3,
+                desksHistory: 1,
+                desksFavorite: 2,
+            })
+        }
+        else{
+            this.setState({
+                desksOwn: 3,
+                desksHistory: 2,
+                desksFavorite: 1,
+            })
+        }
     }
 
     render(){
         return(
             <div>
                 <Search needUpdate={this.needUpdate} setDeskId={this.props.setDeskId}/>
-                <DeskViewer />
+                <DesksViewer index={this.state.desksHistory} name={"История"} change={this.openHistory} userId={this.props.userId} setDeskId={this.props.setDeskId}/>
+                <DesksViewer index={this.state.desksOwn} name={"Мои доски"} change={this.openOwn} userId={this.props.userId} setDeskId={this.props.setDeskId}/>
+                <DesksViewer index={this.state.desksFavorite} name={"Избранные"} change={this.openFavorite} userId={this.props.userId} setDeskId={this.props.setDeskId}/>
             </div>
         )
     }
@@ -107,18 +166,23 @@ class Search extends React.Component{
             left: 9,
         }
         let searchResultStyle = {
-            border: "1px solid black",
             borderBottom: 0,
-            borderTop: 0,
+            border: "1px solid black",
             width: 550,
-            margin: "10px auto"
+            margin: "10px auto",
+            backgroundColor: "white",
+            position: "relative",
+            zIndex: 99,
+            padding: 5,
         }
         let eachResultStyle = {
             marginBottom: 10,
-            borderBottom: "1px solid black",
-            borderTop: "1px solid black",
+            border: "1px solid black",
             cursor: "pointer",
             fontSize: 20,
+            backgroundColor: "white",
+            zIndex: 100,
+            position: "relative",
         }
         let test = []
         let searchResult = []
@@ -160,7 +224,7 @@ class Search extends React.Component{
     }
 }
 
-class DeskViewer extends React.Component{
+class DesksViewer extends React.Component{
     constructor(props){
         super(props)
 
@@ -170,9 +234,144 @@ class DeskViewer extends React.Component{
     }
 
     render(){
+        let miniDeskStyle={
+            display: "inline-block",
+            border: "1px solid black",
+            margin: "20px 48px",
+            width: 500,
+            height: 250,
+            textAlign: "center",
+            backgroundColor: "white",
+            cursor: "pointer",
+        }
+        let deskNameStyle={
+            marginTop: 110,
+            fontSize: 30,
+        }
+        let addDeskStyle={
+            marginTop: 110,
+            marginLeft: "auto",
+            marginRight: "auto",
+            fontSize: 30,
+            border: "1px solid black",
+            width: 35,
+            borderRadius: "50%",
+            backgroundColor: "#ccc"
+        }
+        let leftShift = 0
+        let desks = []
+        if (this.props.name == "История"){
+            leftShift = 10
+            if (this.props.index == 3){
+                let self = this
+                $.ajax({
+                    url: "allDesks/getDesks.php",
+                    method: "post",
+                    data: {
+                        id: self.props.userId,
+                        type: "history",
+                    },
+                    success: function(result) {
+                        result = JSON.parse(result)
+                        for (let value in result){
+                            desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
+                                <p style={deskNameStyle}>{result[value].desk_name}</p>
+                            </div>)
+                        }
+                    },
+                    async: false
+                })
+            }
+        }
+        else if (this.props.name == "Мои доски"){
+            leftShift = 105
+            if (this.props.index == 3){
+                let self = this
+                $.ajax({
+                    url: "allDesks/getDesks.php",
+                    method: "post",
+                    data: {
+                        id: self.props.userId,
+                        type: "own",
+                    },
+                    success: function(result) {
+                        result = JSON.parse(result)
+                        for (let value in result){
+                            desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
+                                <p style={deskNameStyle}>{result[value].desk_name}</p>
+                            </div>)
+                        }
+                    },
+                    async: false
+                })
+                desks.push(<div key={0} style={miniDeskStyle}><p style={addDeskStyle}>+</p></div>)
+            }
+        }
+        else if (this.props.name == "Избранные"){
+            leftShift = 200
+            if (this.props.index == 3){
+                let self = this
+                $.ajax({
+                    url: "allDesks/getDesks.php",
+                    method: "post",
+                    data: {
+                        id: self.props.userId,
+                        type: "favorites",
+                    },
+                    success: function(result) {
+                        result = JSON.parse(result)
+                        for (let value in result){
+                            desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
+                                <p style={deskNameStyle}>{result[value].desk_name}</p>
+                            </div>)
+                        }
+                    },
+                    async: false
+                })
+            }
+        }
+        let deskChangerStyle={
+            width: 100,
+            height: 30,
+            textAlign: "center",
+            position: "relative",
+            top: 20,
+            left: leftShift,
+            backgroundColor: "white",
+            zIndex: this.props.index+3,
+            borderLeft: "1px solid transparent",
+            borderRight: "1px solid transparent",
+            borderImage: "linear-gradient(0deg, black, white)",
+            borderImageSlice: 1,
+            cursor: "pointer",
+        }
+        let containerStyle = {
+            zIndex: this.props.index,
+            position: "absolute",
+            top: 110,
+            left: 20,
+            width: "100%",
+        }
+        let deskViewerStyle = {
+            position: "absolute",
+            top: 0,
+            width: "98%",
+            height: 730,
+            margin: "50px auto 0 auto",
+            boxShadow: "0 5px 20px 1px black",
+            zIndex: this.props.index,
+            backgroundColor: "white",
+            overflow: "auto",
+        }
+
         return(
-            <div>
-                
+            <div style={containerStyle}>
+                <div style={deskChangerStyle} onClick={this.props.change}>
+                    {this.props.name}
+                </div>
+                <div style={deskViewerStyle}>
+                    {desks}
+                </div>
             </div>
         )
     }

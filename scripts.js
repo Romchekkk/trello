@@ -6,6 +6,7 @@ class Site extends React.Component{
         // Проверка авторизации пользователя
         let username = false
         let isAuthorised = true
+        let userId = 1
         $.ajax({
             url: "regAuth/isAuthorised.php",
             method: "post",
@@ -15,6 +16,7 @@ class Site extends React.Component{
                 if (result.set == true){
                     username = result.username
                     isAuthorised = true
+                    userId = result.id
                 }
             },
             async: false
@@ -28,8 +30,10 @@ class Site extends React.Component{
             username: username,
 
             // ID доски, которая просматривается
-            // false - никакая доска не просматривается
-            deskId: false
+            deskId: false,
+
+            // ID пользвателя
+            userId: userId,
         }
 
         this.setUsername = this.setUsername.bind(this)
@@ -56,10 +60,22 @@ class Site extends React.Component{
 
     // Установка ID просматриваемой доски
     setDeskId(id){
+
+        // Запись в историю о посещении доски
+        let self = this
+        $.ajax({
+            url: "allDesks/addDeskToHistory.php",
+            method: "post",
+            data: {
+                user_id: self.state.userId,
+                desk_id: id,
+            },
+            success: function(result) {},
+            async: false
+        })
         this.setState({
             deskId: id
         })
-        console.dir(id)
     }
 
     // Удаление ID просматриваемой доски
@@ -76,10 +92,10 @@ class Site extends React.Component{
         if (this.state.isAuthorised){
             renderData.push(<Header key="Header" username={this.state.username} />)
             if (this.state.deskId != false){
-                renderData.push(<Workspace key="Workspace" deskId={this.state.deskId} exit={this.unsetDeskId} />)
+                renderData.push(<Workspace key="Workspace" deskId={this.state.deskId} exit={this.unsetDeskId} unsetDesk={this.unsetDeskId} />)
             }
             else{
-                renderData.push(<AllDesks key="AllDesks" setDeskId={this.setDeskId} />)
+                renderData.push(<AllDesks key="AllDesks" setDeskId={this.setDeskId} userId={this.state.userId} />)
             }
         }
 
@@ -130,7 +146,7 @@ class Workspace extends React.Component{
         return(
             <div>
                 <Chat deskId={this.props.deskId}/>
-                <Settings />
+                <Settings unsetDesk={this.props.unsetDesk}/>
                 <Desk deskId={this.props.deskId} />
             </div>
         )

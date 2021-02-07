@@ -11,6 +11,8 @@ class Settings extends React.Component{
         return(
             <div style={settingsStyle}>
                 Настройки
+                <br />
+                <input type="button" value="Назад" onClick={this.props.unsetDesk}/>
             </div>
         )
     }
