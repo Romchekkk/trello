@@ -125,7 +125,7 @@ class dataBase{
             );
         }
         while ($type == "history" && count($desks) > 6){
-            mysqli_query($this->_mysql, "DELETE FROM user_desks_memory WHERE user_id=$id AND desk_id=".$desks[count($desks)-1]["id"]);
+            mysqli_query($this->_mysql, "DELETE FROM user_desks_memory WHERE user_id=$id AND type='history' AND desk_id=".$desks[count($desks)-1]["id"]);
             unset($desks[count($desks)-1]);
         }
         return $desks;
@@ -139,5 +139,19 @@ class dataBase{
         else{
             mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
         }
+    }
+
+    public function createDesk($id, $deskName){
+        mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, user_desks_memory WRITE");
+        $result = mysqli_query($this->_mysql, "INSERT INTO desks(desk_name, creator_id, access_rights) VALUES('$deskName', $id, 0)");
+        if ($result) {
+            $desk_id = mysqli_insert_id($this->_mysql);
+            mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
+            mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'own')");
+            mysqli_query($this->_mysql, "UNLOCK TABLES");
+            return $desk_id;
+        }
+        mysqli_query($this->_mysql, "UNLOCK TABLES");
+        return false;
     }
 }

@@ -231,11 +231,41 @@ class DesksViewer extends React.Component{
         this.state = {
 
         }
+        
+        this.openDeskAdder = this.openDeskAdder.bind(this)
+        this.createDesk = this.createDesk.bind(this)
+    }
+
+    openDeskAdder(){
+        document.querySelector("#deskAdderForm").style.display = "block"
+        document.querySelector("#deskAdder").style.display = "none"
+    }
+
+    createDesk(){
+        let form = document.querySelector("#deskAdderForm")
+        if (form != null){
+            let self = this
+            let deskName = form.deskName.value
+            $.ajax({
+                url: "allDesks/createDesk.php",
+                method: "post",
+                data: {
+                    id: self.props.userId,
+                    deskName: deskName,
+                },
+                success: function(result) {
+                    result = JSON.parse(result)
+                    self.props.setDeskId(result)
+                },
+                async: false
+            })
+        }
     }
 
     render(){
         let miniDeskStyle={
             display: "inline-block",
+            position: "relative",
             border: "1px solid black",
             margin: "20px 48px",
             width: 500,
@@ -245,89 +275,59 @@ class DesksViewer extends React.Component{
             cursor: "pointer",
         }
         let deskNameStyle={
-            marginTop: 110,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
             fontSize: 30,
+            transform: "translate(-50%, -50%)",
+            margin: 0,
         }
         let addDeskStyle={
-            marginTop: 110,
-            marginLeft: "auto",
-            marginRight: "auto",
+            position: "absolute",
+            top: "50%",
+            left: "50%",
             fontSize: 30,
             border: "1px solid black",
             width: 35,
             borderRadius: "50%",
-            backgroundColor: "#ccc"
+            backgroundColor: "#ccc",
+            transform: "translate(-50%, -50%)",
+            margin: 0,
+            display: "block",
+        }
+        let deskAdderForm={
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            margin: 0,
+            display: "none",
         }
         let leftShift = 0
         let desks = []
         if (this.props.name == "История"){
             leftShift = 10
             if (this.props.index == 3){
-                let self = this
-                $.ajax({
-                    url: "allDesks/getDesks.php",
-                    method: "post",
-                    data: {
-                        id: self.props.userId,
-                        type: "history",
-                    },
-                    success: function(result) {
-                        result = JSON.parse(result)
-                        for (let value in result){
-                            desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
-                                <p style={deskNameStyle}>{result[value].desk_name}</p>
-                            </div>)
-                        }
-                    },
-                    async: false
-                })
+                desks = setDesks("history", this, this.props.userId, miniDeskStyle, deskNameStyle)
             }
         }
         else if (this.props.name == "Мои доски"){
             leftShift = 105
             if (this.props.index == 3){
-                let self = this
-                $.ajax({
-                    url: "allDesks/getDesks.php",
-                    method: "post",
-                    data: {
-                        id: self.props.userId,
-                        type: "own",
-                    },
-                    success: function(result) {
-                        result = JSON.parse(result)
-                        for (let value in result){
-                            desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
-                                <p style={deskNameStyle}>{result[value].desk_name}</p>
-                            </div>)
-                        }
-                    },
-                    async: false
-                })
-                desks.push(<div key={0} style={miniDeskStyle}><p style={addDeskStyle}>+</p></div>)
+                desks = setDesks("own", this, this.props.userId, miniDeskStyle, deskNameStyle)
+                desks.push(<div key={0} style={miniDeskStyle} onClick={this.openDeskAdder}>
+                    <p id="deskAdder" style={addDeskStyle}>+</p>
+                    <form id="deskAdderForm" style={deskAdderForm}>
+                        <input type="text" name="deskName" placeholder="Имя доски"/><br />
+                        <input type="button" value="Создать" onClick={this.createDesk}/>
+                    </form>
+                </div>)
             }
         }
         else if (this.props.name == "Избранные"){
             leftShift = 200
             if (this.props.index == 3){
-                let self = this
-                $.ajax({
-                    url: "allDesks/getDesks.php",
-                    method: "post",
-                    data: {
-                        id: self.props.userId,
-                        type: "favorites",
-                    },
-                    success: function(result) {
-                        result = JSON.parse(result)
-                        for (let value in result){
-                            desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
-                                <p style={deskNameStyle}>{result[value].desk_name}</p>
-                            </div>)
-                        }
-                    },
-                    async: false
-                })
+                desks = setDesks("favorite", this, this.props.userId, miniDeskStyle, deskNameStyle)
             }
         }
         let deskChangerStyle={
@@ -375,4 +375,26 @@ class DesksViewer extends React.Component{
             </div>
         )
     }
+}
+
+function setDesks(desksType, self, userId, miniDeskStyle, deskNameStyle){
+    let desks = []
+    $.ajax({
+        url: "allDesks/getDesks.php",
+        method: "post",
+        data: {
+            id: userId,
+            type: desksType,
+        },
+        success: function(result) {
+            result = JSON.parse(result)
+            for (let value in result){
+                desks.push(<div key={result[value].id} style={miniDeskStyle} onClick={() => self.props.setDeskId(result[value].id)}>
+                    <p style={deskNameStyle}>{result[value].desk_name}</p>
+                </div>)
+            }
+        },
+        async: false
+    })
+    return desks
 }

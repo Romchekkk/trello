@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Фев 07 2021 г., 23:34
+-- Время создания: Фев 08 2021 г., 23:47
 -- Версия сервера: 8.0.19
 -- Версия PHP: 7.4.5
 
@@ -39,18 +39,14 @@ CREATE TABLE `desks` (
 --
 
 INSERT INTO `desks` (`id`, `desk_name`, `creator_id`, `access_rights`) VALUES
-(1, 'test', 1, 0),
-(4, 'test1', 1, 0),
-(5, 'test2', 1, 0),
-(6, 'test3', 1, 0),
-(7, 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq', 1, 0),
-(8, 'test5', 1, 0),
-(9, 'test6', 1, 0),
-(10, 'test7', 1, 0),
-(11, 'test8', 1, 0),
-(12, 'test9', 1, 0),
-(13, 'test10', 1, 0),
-(14, 'test11', 1, 0);
+(19, '2', 1, 0),
+(20, '3', 1, 0),
+(21, '4', 1, 0),
+(22, '5', 1, 0),
+(23, '6', 1, 0),
+(24, '7', 1, 0),
+(25, '1', 1, 0),
+(26, '3', 1, 0);
 
 -- --------------------------------------------------------
 
@@ -70,13 +66,6 @@ CREATE TABLE `tasks` (
   `is_complete` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Выполнено ли задание',
   `day_order` int NOT NULL COMMENT 'Порядок, занимаемый заданием среди всех в день'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Дамп данных таблицы `tasks`
---
-
-INSERT INTO `tasks` (`id`, `task`, `importance`, `category`, `complete_date`, `complete_time`, `adder_id`, `desk_id`, `is_complete`, `day_order`) VALUES
-(38, 's', 'Срочно', 'Дом', '2021-02-10', 'null', 1, 1, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -116,19 +105,20 @@ CREATE TABLE `user_desks_memory` (
 --
 
 INSERT INTO `user_desks_memory` (`user_id`, `desk_id`, `last_date`, `type`) VALUES
-(1, 4, '2021-02-06 18:40:57', 'own'),
-(1, 5, '2021-02-06 18:41:00', 'own'),
-(1, 6, '2021-02-06 18:41:07', 'own'),
-(1, 7, '2021-02-06 18:41:10', 'own'),
-(1, 8, '2021-02-06 18:41:15', 'own'),
-(1, 9, '2021-02-06 18:41:18', 'own'),
-(1, 11, '2021-02-06 18:41:27', 'own'),
-(1, 7, '2021-02-06 20:37:40', 'history'),
-(1, 11, '2021-02-07 20:25:12', 'history'),
-(1, 9, '2021-02-06 20:36:42', 'history'),
-(1, 8, '2021-02-06 20:37:02', 'history'),
-(1, 4, '2021-02-07 20:25:36', 'history'),
-(1, 1, '2021-02-07 20:25:16', 'history');
+(1, 19, '2021-02-08 20:43:47', 'own'),
+(1, 20, '2021-02-08 20:43:52', 'own'),
+(1, 21, '2021-02-08 20:43:56', 'history'),
+(1, 21, '2021-02-08 20:43:56', 'own'),
+(1, 22, '2021-02-08 20:44:00', 'history'),
+(1, 22, '2021-02-08 20:44:00', 'own'),
+(1, 23, '2021-02-08 20:44:56', 'history'),
+(1, 23, '2021-02-08 20:44:56', 'own'),
+(1, 24, '2021-02-08 20:45:09', 'history'),
+(1, 24, '2021-02-08 20:45:09', 'own'),
+(1, 25, '2021-02-08 20:46:32', 'history'),
+(1, 25, '2021-02-08 20:46:32', 'own'),
+(1, 26, '2021-02-08 20:46:49', 'history'),
+(1, 26, '2021-02-08 20:46:39', 'own');
 
 --
 -- Индексы сохранённых таблиц
@@ -173,7 +163,7 @@ ALTER TABLE `user_desks_memory`
 -- AUTO_INCREMENT для таблицы `desks`
 --
 ALTER TABLE `desks`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Уникальный идентификатор', AUTO_INCREMENT=15;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Уникальный идентификатор', AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT для таблицы `tasks`
