@@ -6,7 +6,7 @@ require_once('../database/database.php');
 
 $_RESULT = array();
 
-foreach(array('nickname', 'login', 'password', 'passwordRepeat') as $param){
+foreach(array('login', 'password', 'passwordRepeat') as $param){
     $$param = isset($_POST[$param])
         ? $_POST[$param]
         : "";
@@ -21,9 +21,6 @@ $_RESULT['errorUserExisting'] = false;
 $_RESULT['noErrors'] = false;
 
 // Проверка логина и пароля на корректность
-if ($nickname == ""){
-    $_RESULT['errorNickname'] = true;
-}
 if ($login == ""){
     $_RESULT['errorLogin'] = true;
 }
@@ -32,9 +29,6 @@ if ($password == ""){
 }
 if ($passwordRepeat == ""){
     $_RESULT['errorPasswordRepeat'] = true;
-}
-if (strlen($nickname) > 65){
-    $_RESULT['errorNicknameLength'] = true;
 }
 if (strlen($login) > 65){
     $_RESULT['errorLoginLength'] = true;
@@ -46,25 +40,34 @@ if ($_RESULT['errorLogin'] ||
     $_RESULT['errorPassword'] ||
     $_RESULT['errorPasswordRepeat'] ||
     $_RESULT['errorLoginLength'] ||
-    $_RESULT['errorNicknameLength'] ||
-    $_RESULT['errorPasswordAssertion'] ||
-    $_RESULT['errorNickname']){
+    $_RESULT['errorPasswordAssertion']){
     echo json_encode($_RESULT);
     die();
 }
 
 $mysql = new dataBase();
-$user = $mysql->getParticularUser('login', $login);
-if ($mysql->getParticularUser('login', $login) !== false){
+$isUserExist = $mysql->isUserExist($login);
+if ($isUserExist === 1){
     $_RESULT['errorUserExisting'] = true;
     echo json_encode($_RESULT);
     die();
 }
-else{
-    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-    $mysql->addUser($nickname, $login, $passwordHash);
-    $_SESSION['username'] = $username;
+else if ($isUserExist === 2){
     $_RESULT['noErrors'] = true;
-    $_RESULT['username'] = $username;
+    echo json_encode($_RESULT);
+    die();
+}
+else if ($isUserExist === 0){
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+    $user_id = $mysql->addUser($login, $passwordHash);
+    if ($user_id){
+        $_SESSION['user_id'] = $user_id;
+        $_RESULT['noErrors'] = true;
+        $_RESULT['userId'] = $user_id;
+        $_RESULT['login'] = $login;
+    }
+    else{
+        $_RESULT['noErrors'] = true;
+    }
 }
 echo json_encode($_RESULT);

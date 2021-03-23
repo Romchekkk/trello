@@ -12,7 +12,10 @@ class dataBase{
         mysqli_close($this->_mysql);
     }
 
-    public function addTask($task, $importance, $category, $date, $time, $adder_id, $desk_id){  
+    public function addTask($task, $importance, $category, $date, $time, $adder_id, $desk_id){
+        foreach (["task", "importance", "category", "date", "time", "adder_id", "desk_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         $rows = 0;
         $result = mysqli_query($this->_mysql, "SELECT count(*) FROM tasks WHERE complete_date='$date' AND desk_id=$desk_id");
         while($row = mysqli_fetch_array($result)){
@@ -22,6 +25,9 @@ class dataBase{
     }
 
     public function getTasks($date, $desk_id){
+        foreach (["date", "desk_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         $tasks = array();
         $result = mysqli_query($this->_mysql, "SELECT task, importance, category, id, is_complete, day_order, complete_time FROM tasks WHERE complete_date='$date' AND desk_id=$desk_id ORDER BY day_order");
         while($row = mysqli_fetch_array($result)){
@@ -39,22 +45,96 @@ class dataBase{
     }
 
     public function deleteTask($id){
+        foreach (["id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         mysqli_query($this->_mysql, "DELETE FROM tasks WHERE id=$id");
     }
 
     public function completeTask($id){
+        foreach (["id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         mysqli_query($this->_mysql, "UPDATE tasks SET is_complete=1 WHERE id=$id");
     }
 
     public function uncompleteTask($id){
+        foreach (["id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         mysqli_query($this->_mysql, "UPDATE tasks SET is_complete=0 WHERE id=$id");
     }
 
-    public function addUser($nickname, $login, $password){
-        mysqli_query($this->_mysql, "INSERT INTO users(nickname, login, password) VALUES('$nickname', '$login', '$password')");
+    public function addUser($login, $password){
+        foreach (["login", "password"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, user_desks_memory WRITE");
+        $result = mysqli_query($this->_mysql, "INSERT INTO users(login, password) VALUES('$login', '$password')");
+        if ($result) {
+            $user_id = mysqli_insert_id($this->_mysql);
+            mysqli_query($this->_mysql, "UNLOCK TABLES");
+            return $user_id;
+        }
+        mysqli_query($this->_mysql, "UNLOCK TABLES");
+        return false;
+    }
+
+    public function isUserExist($login){
+        foreach (["login"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT * FROM users WHERE login='$login'");
+        if ($result){
+            $row = mysqli_fetch_array($result);
+            if ($row){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+        return 2;
+    }
+
+    public function getParticularUserById($id){
+        foreach (["id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT * FROM users WHERE id='$id'");
+        if ($result){
+            $row = mysqli_fetch_array($result);
+            if ($row){
+                return $row["login"];
+            }
+            else{
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public function getParticularUserByLogin($login){
+        foreach (["login"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT * FROM users WHERE login='$login'");
+        if ($result){
+            $row = mysqli_fetch_array($result);
+            if ($row){
+                return $row;
+            }
+            else{
+                return false;
+            }
+        }
+        return false;
     }
 
     public function dragTask($date, $id, $destination, $target){
+        foreach (["date", "id", "destination", "target"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         $result = mysqli_query($this->_mysql, "SELECT complete_date FROM tasks WHERE id=$id");
         $oldDate = "";
         while($row = mysqli_fetch_array($result)){
@@ -104,6 +184,9 @@ class dataBase{
     }
 
     public function searchDesks($text){
+        foreach (["text"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         $desks = array();
         $result = mysqli_query($this->_mysql, "SELECT id, desk_name, access_rights FROM desks WHERE INSTR(desk_name, '$text')=1 ORDER BY desk_name");
         while ($row = mysqli_fetch_array($result)) {
@@ -116,6 +199,9 @@ class dataBase{
     }
 
     public function getDesks($id, $type){
+        foreach (["id", "type"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         $desks = array();
         $result = mysqli_query($this->_mysql, "SELECT id, desk_name, last_date FROM (SELECT * FROM user_desks_memory WHERE user_id=$id AND type='$type') udm JOIN desks ON udm.desk_id=desks.id ORDER BY last_date DESC");
         while ($row = mysqli_fetch_array($result)) {
@@ -132,6 +218,9 @@ class dataBase{
     }
 
     public function addDeskToHistory($id, $desk_id){
+        foreach (["id", "desk_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         $result = mysqli_query($this->_mysql, "SELECT * FROM user_desks_memory WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
         if (mysqli_fetch_array($result)){
             mysqli_query($this->_mysql, "UPDATE `user_desks_memory` SET `last_date`=DEFAULT WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
@@ -142,6 +231,9 @@ class dataBase{
     }
 
     public function createDesk($id, $deskName){
+        foreach (["id", "deskName"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
         mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, user_desks_memory WRITE");
         $result = mysqli_query($this->_mysql, "INSERT INTO desks(desk_name, creator_id, access_rights) VALUES('$deskName', $id, 0)");
         if ($result) {

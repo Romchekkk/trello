@@ -30,19 +30,19 @@ if ($_RESULT['errorLogin'] || $_RESULT['errorPassword']){
 }
 
 $mysql = new dataBase();
-$user = $mysql->getParticularUser('login', $login);
-if (password_verify($password, $user['password']) === false){
-    $_RESULT['errorUserAssertion'] = true;
-    echo json_encode($_RESULT);
-    die();
-}
-else{
-    $newUser = array(
-        'username' => $login
-    );
-    $_SESSION['user'] = $newUser;
-    $_RESULT['noErrors'] = true;
-    $_RESULT['username'] = $login;
+$user = $mysql->getParticularUserByLogin($login);
+if ($user) {
+    if (password_verify($password, $user['password']) === false) {
+        $_RESULT['errorUserAssertion'] = true;
+        echo json_encode($_RESULT);
+        die();
+    } 
+    else {
+        $_SESSION['user_id'] = $user["id"];
+        $_RESULT['noErrors'] = true;
+        $_RESULT['login'] = $login;
+        $_RESULT["userId"] = $user["id"];
+    }
 }
 
 echo json_encode($_RESULT);

@@ -8,8 +8,8 @@ class PersonalAreaPage extends React.Component{
 
         this.authorisation = this.authorisation.bind(this)
         this.registration = this.registration.bind(this)
-        this.setCurrenStateToAuthorisation = this.setCurrenStateToAuthorisation.bind(this)
-        this.setCurrenStateToRegistration = this.setCurrenStateToRegistration.bind(this)
+        this.setCurrentStateToAuthorisation = this.setCurrentStateToAuthorisation.bind(this)
+        this.setCurrentStateToRegistration = this.setCurrentStateToRegistration.bind(this)
     }
 
     authorisation(){
@@ -23,12 +23,11 @@ class PersonalAreaPage extends React.Component{
                 password: form.password.value
             },
             success: function( result ) {
-                console.dir(result)
                 result = JSON.parse(result)
                 document.querySelector("#form [name=login]").style.boxShadow = ""
                 document.querySelector("#form [name=password]").style.boxShadow = ""
                 if (result.noErrors == true){
-                    self.props.setUsername(result.username)
+                    self.props.authoriseUser(result.login, result.userId)
                 }
                 else{
                     if (result.errorLogin == true){
@@ -65,30 +64,35 @@ class PersonalAreaPage extends React.Component{
                 document.querySelector("#form [name=password]").style.boxShadow = ""
                 document.querySelector("#form [name=passwordRepeat]").style.boxShadow = ""
                 if (result.noErrors == true){
-                    self.props.setUsername(result.username)
+                    self.props.authoriseUser(result.login, result.userId)
                 }
                 else{
                     if (result.errorLogin == true){
                         document.querySelector("#form [name=login]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorLoginLength){
+                    else if (result.errorLoginLength){
                         form.querySelector("[name=\"error\"]").innerHTML = "Имя пользователя слишком длинное, максимум 20 символов"
                         document.querySelector("#form [name=login]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorUserExisting == true){
+                    else if (result.errorUserExisting == true){
                         form.querySelector("[name=\"error\"]").innerHTML = "Пользователь с таким именем уже существует"
                         document.querySelector("#form [name=login]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorPassword == true){
+                    else if (result.errorPassword == true){
+                        form.querySelector("[name=\"error\"]").innerHTML = "Пароль не указан"
                         document.querySelector("#form [name=password]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorPasswordRepeat){
+                    else if (result.errorPasswordRepeat){
+                        form.querySelector("[name=\"error\"]").innerHTML = "Пароль не указан повторно"
                         document.querySelector("#form [name=passwordRepeat]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorPasswordAssertion){
+                    else if (result.errorPasswordAssertion){
                         form.querySelector("[name=\"error\"]").innerHTML = "Пароли не совпадают"
                         document.querySelector("#form [name=password]").style.boxShadow = "0px 0px 5px red"
                         document.querySelector("#form [name=passwordRepeat]").style.boxShadow = "0px 0px 5px red"
+                    }
+                    else {
+                        form.querySelector("[name=\"error\"]").innerHTML = "Непредвиденная ошибка"
                     }
                 }
             },
@@ -96,13 +100,13 @@ class PersonalAreaPage extends React.Component{
         })
     }
 
-    setCurrenStateToAuthorisation(){
+    setCurrentStateToAuthorisation(){
         this.setState({
             currentState: "authorisation"
         })
     }
 
-    setCurrenStateToRegistration(){
+    setCurrentStateToRegistration(){
         this.setState({
             currentState: "registration"
         })
@@ -173,16 +177,16 @@ class PersonalAreaPage extends React.Component{
         if (this.state.currentState == "authorisation"){
             content = <Authorisation
                 action={this.authorisation}
-                setCurrenStateToAuthorisation={this.setCurrenStateToAuthorisation}
-                setCurrenStateToRegistration={this.setCurrenStateToRegistration}
+                setCurrentStateToAuthorisation={this.setCurrentStateToAuthorisation}
+                setCurrentStateToRegistration={this.setCurrentStateToRegistration}
                 {...styles}
             />
         }
         if (this.state.currentState == "registration"){
             content = <Registration
                 action={this.registration}
-                setCurrenStateToAuthorisation={this.setCurrenStateToAuthorisation}
-                setCurrenStateToRegistration={this.setCurrenStateToRegistration}
+                setCurrentStateToAuthorisation={this.setCurrentStateToAuthorisation}
+                setCurrentStateToRegistration={this.setCurrentStateToRegistration}
                 {...styles}
             />
         }
@@ -227,10 +231,10 @@ class Authorisation extends React.Component{
                     <span name="error"></span>
                     <input style={this.props.styleInput} type="text" name="login" placeholder="Имя пользователя" /><br />
                     <input style={this.props.styleInput} type="password" name="password" placeholder="Пароль" /><br />
-                    <input type="button" style={this.props.styleInput} onClick={this.props.action} onFocus={this.foc} value="Войти" />
+                    <input type="button" style={this.props.styleInput} onClick={this.props.action} value="Войти" />
                 </form>
-                <div style={this.props.styleForSecond} onClick={this.props.setCurrenStateToRegistration}>Регистрация</div>
-                <div style={this.props.styleForCurrent} onClick={this.props.setCurrenStateToAuthorisation}>Авторизация</div>
+                <div style={this.props.styleForSecond} onClick={this.props.setCurrentStateToRegistration}>Регистрация</div>
+                <div style={this.props.styleForCurrent} onClick={this.props.setCurrentStateToAuthorisation}>Авторизация</div>
             </div>
         )
     }
@@ -247,8 +251,8 @@ class Registration extends React.Component{
                     <input style={this.props.styleInput} type="password" name="passwordRepeat" placeholder="Пароль еще раз" /><br />
                     <input type="button" style={this.props.styleInput} onClick={this.props.action} value="Зарегистрироваться"/>
                 </form>
-                <div style={this.props.styleForCurrent} onClick={this.props.setCurrenStateToRegistration}>Регистрация</div>
-                <div style={this.props.styleForSecond} onClick={this.props.setCurrenStateToAuthorisation}>Авторизация</div>
+                <div style={this.props.styleForCurrent} onClick={this.props.setCurrentStateToRegistration}>Регистрация</div>
+                <div style={this.props.styleForSecond} onClick={this.props.setCurrentStateToAuthorisation}>Авторизация</div>
             </div>
         )
     }

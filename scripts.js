@@ -4,9 +4,9 @@ class Site extends React.Component{
         super(props)
 
         // Проверка авторизации пользователя
-        let username = false
-        let isAuthorised = true
-        let userId = 1
+        let login = false
+        let isAuthorised = false
+        let userId = false
         $.ajax({
             url: "regAuth/isAuthorised.php",
             method: "post",
@@ -14,9 +14,9 @@ class Site extends React.Component{
             success: function(result) {
                 result = JSON.parse(result)
                 if (result.set == true){
-                    username = result.username
+                    login = result.login
                     isAuthorised = true
-                    userId = result.id
+                    userId = result.userId
                 }
             },
             async: false
@@ -27,7 +27,7 @@ class Site extends React.Component{
             isAuthorised: isAuthorised,
             
             // Имя пользователя
-            username: username,
+            login: login,
 
             // ID доски, которая просматривается
             deskId: false,
@@ -36,25 +36,34 @@ class Site extends React.Component{
             userId: userId,
         }
 
-        this.setUsername = this.setUsername.bind(this)
-        this.unsetUsername = this.unsetUsername.bind(this)
+        this.authoriseUser = this.authoriseUser.bind(this)
+        this.unAuthoriseUser = this.unAuthoriseUser.bind(this)
         this.setDeskId = this.setDeskId.bind(this)
         this.unsetDeskId = this.unsetDeskId.bind(this)
     }
 
     // Установка имени пользователя
-    setUsername(username){
+    authoriseUser(login, userId){
         this.setState({
-            username: username,
-            isAuthorised: true
+            login: login,
+            isAuthorised: true,
+            userId: userId
         })
     }
 
     // Удаление имени пользователя
-    unsetUsername(){
+    unAuthoriseUser(){
+        $.ajax({
+            url: "regAuth/unAuthorise.php",
+            method: "post",
+            data: {},
+            success: function(result) {},
+            async: false
+        })
         this.setState({
-            username: false,
-            isAuthorised: false
+            login: false,
+            isAuthorised: false,
+            userId: false
         })
     }
 
@@ -90,7 +99,7 @@ class Site extends React.Component{
 
         // Если пользователь авторизован
         if (this.state.isAuthorised){
-            renderData.push(<Header key="Header" username={this.state.username} />)
+            renderData.push(<Header key="Header" login={this.state.login} unAuthoriseUser={this.unAuthoriseUser} />)
             if (this.state.deskId != false){
                 renderData.push(<Workspace key="Workspace" deskId={this.state.deskId} exit={this.unsetDeskId} unsetDesk={this.unsetDeskId} />)
             }
@@ -101,8 +110,7 @@ class Site extends React.Component{
 
         // Если пользователь не авторизован
         else{
-            renderData.push(<Header key="Header" username={this.state.username} />)
-            renderData.push(<RegAuth key="RegAuth" setUsername={this.setUsername} unsetUsername={this.unsetUsername} />)
+            renderData.push(<RegAuth key="RegAuth" authoriseUser={this.authoriseUser} />)
         }
 
         return(
@@ -119,7 +127,7 @@ class Header extends React.Component{
         let styleMain = {
             width: "100%",
             backgroundColor: "#7085ff",
-            height: 40,
+            height: 50,
             padding: 20,
             margin: 0,
             boxSizing: "border-box"
@@ -134,7 +142,7 @@ class Header extends React.Component{
 
                 <div></div>
                 <div></div>
-                <div></div>
+                <div><input type="button" onClick={this.props.unAuthoriseUser} value="Выйти"/></div>
             </div>
         )
     }
@@ -158,10 +166,7 @@ class RegAuth extends React.Component{
     render(){
         return(
             <div>
-                <PersonalAreaPage
-                setUsername={this.props.setUsername}
-                unsetUsername={this.props.unsetUsername}
-            />
+                <PersonalAreaPage authoriseUser={this.props.authoriseUser} />
             </div>
         )
     }

@@ -14,7 +14,7 @@ $today = date('Y-m-d');
 $addDayFirst = date('Y-m-d', ceil($timestampFirst/1000));
 if ($timestampSecond == "") {
     if ($today <= $addDayFirst) {
-        $mysql->addTask($task, $importance, $category, date("Y.m.d", ceil($timestampFirst/1000)), $complete_time, 1, $desk_id);
+        $mysql->addTask($task, $importance, $category, date("Y.m.d", ceil($timestampFirst/1000)), $complete_time, $_SESSION["user_id"], $desk_id);
     }
 }
 else{
@@ -22,7 +22,7 @@ else{
     $current = $addDayFirst;
     while($current <= $addDaySecond){
         if ($today <= $current) {
-            $mysql->addTask($task, $importance, $category, date("Y.m.d", strtotime($current)), $complete_time, 1, $desk_id);
+            $mysql->addTask($task, $importance, $category, date("Y.m.d", strtotime($current)), $complete_time, $_SESSION["user_id"], $desk_id);
         }
         $current = date('Y-m-d', strtotime($current)+60*60*24);
     }
