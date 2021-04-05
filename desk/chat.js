@@ -11,8 +11,25 @@ class Chat extends React.Component{
         }
         return(
             <div id="chat" style={chatStyle}>
-                Чат
+                <Messages />
+                <InputText />
             </div>
+        )
+    }
+}
+
+class Messages extends React.Component{
+    render(){
+        return(
+        <div>Сообщения</div>
+        )
+    }
+}
+
+class InputText extends React.Component{
+    render(){
+        return(
+        <div>Ввод</div>
         )
     }
 }

@@ -69,7 +69,7 @@ class dataBase{
         foreach (["login", "password"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
-        mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, user_desks_memory WRITE");
+        mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, users_desks_memory WRITE");
         $result = mysqli_query($this->_mysql, "INSERT INTO users(login, password) VALUES('$login', '$password')");
         if ($result) {
             $user_id = mysqli_insert_id($this->_mysql);
@@ -203,7 +203,7 @@ class dataBase{
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
         $desks = array();
-        $result = mysqli_query($this->_mysql, "SELECT id, desk_name, last_date FROM (SELECT * FROM user_desks_memory WHERE user_id=$id AND type='$type') udm JOIN desks ON udm.desk_id=desks.id ORDER BY last_date DESC");
+        $result = mysqli_query($this->_mysql, "SELECT id, desk_name, last_date FROM (SELECT * FROM users_desks_memory WHERE user_id=$id AND type='$type') udm JOIN desks ON udm.desk_id=desks.id ORDER BY last_date DESC");
         while ($row = mysqli_fetch_array($result)) {
             $desks[] = array(
                 'id' => $row[0],
@@ -211,7 +211,7 @@ class dataBase{
             );
         }
         while ($type == "history" && count($desks) > 6){
-            mysqli_query($this->_mysql, "DELETE FROM user_desks_memory WHERE user_id=$id AND type='history' AND desk_id=".$desks[count($desks)-1]["id"]);
+            mysqli_query($this->_mysql, "DELETE FROM users_desks_memory WHERE user_id=$id AND type='history' AND desk_id=".$desks[count($desks)-1]["id"]);
             unset($desks[count($desks)-1]);
         }
         return $desks;
@@ -221,12 +221,12 @@ class dataBase{
         foreach (["id", "desk_id"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
-        $result = mysqli_query($this->_mysql, "SELECT * FROM user_desks_memory WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
+        $result = mysqli_query($this->_mysql, "SELECT * FROM users_desks_memory WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
         if (mysqli_fetch_array($result)){
-            mysqli_query($this->_mysql, "UPDATE `user_desks_memory` SET `last_date`=DEFAULT WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
+            mysqli_query($this->_mysql, "UPDATE `users_desks_memory` SET `last_date`=DEFAULT WHERE user_id=$id AND type='history' AND desk_id=$desk_id");
         }
         else{
-            mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
+            mysqli_query($this->_mysql, "INSERT INTO users_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
         }
     }
 
@@ -234,16 +234,101 @@ class dataBase{
         foreach (["id", "deskName"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
-        mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, user_desks_memory WRITE");
+        mysqli_query($this->_mysql, "LOCK TABLES desks WRITE, tasks WRITE, users WRITE, users_desks_memory WRITE");
         $result = mysqli_query($this->_mysql, "INSERT INTO desks(desk_name, creator_id, access_rights) VALUES('$deskName', $id, 0)");
         if ($result) {
             $desk_id = mysqli_insert_id($this->_mysql);
-            mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
-            mysqli_query($this->_mysql, "INSERT INTO user_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'own')");
+            mysqli_query($this->_mysql, "INSERT INTO users_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'history')");
+            mysqli_query($this->_mysql, "INSERT INTO users_desks_memory(user_id, desk_id, type) VALUES ($id, $desk_id, 'own')");
             mysqli_query($this->_mysql, "UNLOCK TABLES");
             return $desk_id;
         }
         mysqli_query($this->_mysql, "UNLOCK TABLES");
         return false;
+    }
+
+    public function isCreator($user_id, $desk_id){
+        foreach (["user_id", "desk_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT creator_id FROM desks WHERE id=$desk_id");
+        if ($result){
+            if ($user_id == mysqli_fetch_array($result)["creator_id"]){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function getAccessRights($desk_id, $withGroup = false){
+        foreach (["desk_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT access_rights, group_access FROM desks WHERE id=$desk_id");
+        if ($result){
+            if ($withGroup){
+                return mysqli_fetch_array($result);
+            }
+            else{
+                return mysqli_fetch_array($result)["access_rights"];
+            }
+        }
+        return false;
+    }
+
+    public function isInUserDesksAccess($desk_id, $user_id){
+        foreach (["desk_id", "user_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT * FROM users_desks_access WHERE desk_id=$desk_id AND user_id=$user_id");
+        if ($result){
+            if (mysqli_fetch_array($result)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function isInGroupAccess($desk_id, $user_id){
+        foreach (["desk_id", "user_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT * FROM users_groups JOIN desks ds ON group_access=group_id WHERE user_id=$user_id AND ds.id=$desk_id");
+        if ($result){
+            if (mysqli_fetch_array($result)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function getGroupName($group_id){
+        foreach (["group_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT `name` FROM `groups` WHERE id=$group_id");
+        if ($result){
+            return mysqli_fetch_array($result);
+        }
+        return false;
+    }
+
+    public function changeAccessRights($desk_id, $newType, $newGroup){
+        foreach (["desk_id", "newType", "newGroup"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        if ($newType != 2){
+            mysqli_query($this->_mysql, "UPDATE desks SET access_rights=$newType, group_access=1 WHERE id=$desk_id");
+        }
+        else{
+            $result = mysqli_query($this->_mysql, "SELECT `id` FROM `groups` WHERE `name`='$newGroup'");
+            if ($result){
+                $groupName = mysqli_fetch_array($result)["id"];
+                if ($groupName == "") {
+                    $groupName = 1;
+                }
+                mysqli_query($this->_mysql, "UPDATE desks SET access_rights=$newType, group_access=$groupName WHERE id=$desk_id");
+            }
+        }
     }
 }

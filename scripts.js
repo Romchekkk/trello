@@ -7,6 +7,7 @@ class Site extends React.Component{
         let login = false
         let isAuthorised = false
         let userId = false
+        let deskId = false
         $.ajax({
             url: "regAuth/isAuthorised.php",
             method: "post",
@@ -17,6 +18,7 @@ class Site extends React.Component{
                     login = result.login
                     isAuthorised = true
                     userId = result.userId
+                    deskId = result.deskId
                 }
             },
             async: false
@@ -30,7 +32,7 @@ class Site extends React.Component{
             login: login,
 
             // ID доски, которая просматривается
-            deskId: false,
+            deskId: deskId,
 
             // ID пользвателя
             userId: userId,
@@ -63,7 +65,8 @@ class Site extends React.Component{
         this.setState({
             login: false,
             isAuthorised: false,
-            userId: false
+            userId: false,
+            deskId: false
         })
     }
 
@@ -73,13 +76,18 @@ class Site extends React.Component{
         // Запись в историю о посещении доски
         let self = this
         $.ajax({
-            url: "allDesks/addDeskToHistory.php",
+            url: "allDesks/openDesk.php",
             method: "post",
             data: {
                 user_id: self.state.userId,
                 desk_id: id,
             },
-            success: function(result) {},
+            success: function(result) {
+                result = JSON.parse(result)
+                if (result.dontHaveAccess == true){
+                    id = false
+                }
+            },
             async: false
         })
         this.setState({
@@ -89,6 +97,13 @@ class Site extends React.Component{
 
     // Удаление ID просматриваемой доски
     unsetDeskId(){
+        $.ajax({
+            url: "allDesks/closeDesk.php",
+            method: "post",
+            data: {},
+            success: function(result) {},
+            async: false
+        })
         this.setState({
             deskId: false
         })
@@ -99,7 +114,7 @@ class Site extends React.Component{
 
         // Если пользователь авторизован
         if (this.state.isAuthorised){
-            renderData.push(<Header key="Header" login={this.state.login} unAuthoriseUser={this.unAuthoriseUser} />)
+            renderData.push(<Header key="Header" login={this.state.login} unAuthoriseUser={this.unAuthoriseUser} login={this.state.login} />)
             if (this.state.deskId != false){
                 renderData.push(<Workspace key="Workspace" deskId={this.state.deskId} exit={this.unsetDeskId} unsetDesk={this.unsetDeskId} />)
             }
@@ -130,19 +145,26 @@ class Header extends React.Component{
             height: 50,
             padding: 20,
             margin: 0,
-            boxSizing: "border-box"
+            boxSizing: "border-box",
+        }
+        let styleLogin = {
+            display: "inline-block"
+        }
+        let styleExit = {
+            display: "inline-block",
+            float: "right"
         }
         return(
             <div style={styleMain}>
-                <div></div>
-                <div></div>
-                <div></div>
+                <div style={styleLogin}>{this.props.login}</div>
+                <div style={styleLogin}></div>
+                <div style={styleLogin}></div>
 
-                <div></div>
+                <div style={styleLogin}></div>
 
-                <div></div>
-                <div></div>
-                <div><input type="button" onClick={this.props.unAuthoriseUser} value="Выйти"/></div>
+                <div style={styleLogin}></div>
+                <div style={styleLogin}></div>
+                <div style={styleExit}><input type="button" onClick={this.props.unAuthoriseUser} value="Выйти"/></div>
             </div>
         )
     }
@@ -151,10 +173,17 @@ class Header extends React.Component{
 // Рабочее пространство пользователя (доска, её настройки и чат)
 class Workspace extends React.Component{
     render(){
+        let settings
+        if (true){
+            settings = <Settings unsetDesk={this.props.unsetDesk} deskId={this.props.deskId}/>
+        }
+        else{
+            settings = <FuckGoBack unsetDesk={this.props.unsetDesk}/>
+        }
         return(
             <div>
                 <Chat deskId={this.props.deskId}/>
-                <Settings unsetDesk={this.props.unsetDesk}/>
+                {settings}
                 <Desk deskId={this.props.deskId} />
             </div>
         )

@@ -14,6 +14,7 @@ if (isset($_SESSION['user_id'])){
         $_RESULT['set'] = true;
         $_RESULT['login'] = $login;
         $_RESULT["userId"] = $_SESSION["user_id"];
+        $_RESULT["deskId"] = isset($_SESSION["open_desk_id"])?$_SESSION["open_desk_id"]:false;
     }
 }
 echo json_encode($_RESULT);
