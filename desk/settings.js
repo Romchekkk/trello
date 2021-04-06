@@ -1,4 +1,5 @@
 // Настройки доски
+//¯\_(ツ)_/¯
 class FuckGoBack extends React.Component{
     render(){
         let buttonStyle = {
