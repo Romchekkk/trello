@@ -15,7 +15,7 @@ foreach (array('desk_id') as $parameterName) {
 $accessRights = $mysql->getAccessRights($desk_id, true);
 $_RESULT["currentType"] = $accessRights["access_rights"];
 
-$groupName = $mysql->getGroupName($accessRights["group_access"])["name"];
+$groupName = $mysql->getGroupName($accessRights["group_access"])["group_name"];
 
 $_RESULT["groupName"] = $groupName;
 

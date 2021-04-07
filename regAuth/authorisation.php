@@ -15,6 +15,7 @@ foreach(array('login', 'password') as $param){
 $_RESULT['errorLogin'] = false;
 $_RESULT['errorPassword'] = false;
 $_RESULT['errorUserAssertion'] = false;
+$_RESULT['errorUserExisting'] = false;
 $_RESULT['noErrors'] = false;
 
 // Проверка логина и пароля на корректность
@@ -43,6 +44,9 @@ if ($user) {
         $_RESULT['login'] = $login;
         $_RESULT["userId"] = $user["id"];
     }
+}
+else{
+    $_RESULT['errorUserExisting'] = true;
 }
 
 echo json_encode($_RESULT);

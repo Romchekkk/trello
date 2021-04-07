@@ -30,7 +30,7 @@ if ($password == ""){
 if ($passwordRepeat == ""){
     $_RESULT['errorPasswordRepeat'] = true;
 }
-if (strlen($login) > 65){
+if (mb_strlen($login) > 20){
     $_RESULT['errorLoginLength'] = true;
 }
 if ($password != $passwordRepeat){

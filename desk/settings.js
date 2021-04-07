@@ -1,5 +1,4 @@
 // Настройки доски
-//¯\_(ツ)_/¯
 class FuckGoBack extends React.Component{
     render(){
         let buttonStyle = {
@@ -85,17 +84,26 @@ class AccessRightsChanger extends React.Component{
 
         this.state={
             currentType: currentType,
-            groupName: groupName
+            groupName: groupName,
+            searchText: "",
+            searchUsersAccessed: "",
+            searchUsersNotAccessed: "",
+            update: false
         }
 
         this.changeType = this.changeType.bind(this)
         this.changeAccessRights = this.changeAccessRights.bind(this)
+        this.searchGroup = this.searchGroup.bind(this)
+        this.searchUsersAccessed = this.searchUsersAccessed.bind(this)
+        this.searchUsersNotAccessed = this.searchUsersNotAccessed.bind(this)
+        this.swapUserDedicatedAccess = this.swapUserDedicatedAccess.bind(this)
     }
 
     changeType(){
         let newValue = document.querySelector("#accessRightsChangerForm").type.value
         this.setState({
-            currentType: newValue
+            currentType: newValue,
+            searchText: ""
         })
     }
 
@@ -115,6 +123,51 @@ class AccessRightsChanger extends React.Component{
                 self.props.closeAccessRightsChanger()
             },
             async: false
+        })
+    }
+
+    searchGroup(){
+        let text = document.querySelector("#accessRightsChangerForm").group.value
+        this.setState({
+            searchText: text
+        })
+    }
+
+    findGroup(text){
+        document.querySelector("#accessRightsChangerForm").group.value = text
+        this.setState({
+            searchText: ""
+        })
+    }
+
+    searchUsersAccessed(){
+        let text = document.querySelector("#accessRightsChangerForm").searchUsersAccessed.value
+        this.setState({
+            searchUsersAccessed: text
+        })
+    }
+
+    searchUsersNotAccessed(){
+        let text = document.querySelector("#accessRightsChangerForm").searchUsersNotAccessed.value
+        this.setState({
+            searchUsersNotAccessed: text
+        })
+    }
+
+    swapUserDedicatedAccess(userId){
+        $.ajax({
+            url: "/desk/swapUserDedicatedAccess.php",
+            method: "post",
+            data: {
+                deskId: this.props.deskId,
+                userId: userId
+            },
+            success: function(result) {},
+            async: false
+        })
+        let update = !this.state.update
+        this.setState({
+            update: update
         })
     }
 
@@ -163,13 +216,122 @@ class AccessRightsChanger extends React.Component{
         let hiddenStyle = {
             display: "none"
         }
+        let eachResultStyle = {
+            marginBottom: 10,
+            border: "1px solid black",
+            cursor: "pointer",
+            fontSize: 20,
+            backgroundColor: "white",
+            zIndex: 100,
+            position: "relative",
+        }
+        let eachUserStyle = {
+            marginBottom: 10,
+            fontSize: 20,
+            border: "1px solid black",
+            cursor: "pointer"
+        }
+        let userAccessedList = {
+            border: "1px solid black",
+            backgroundColor: "white",
+            width: 300,
+            margin: "10px auto 0 auto",
+            height: 200,
+            overflowY: "scroll"
+        }
+        let searchStyle={
+            textAlign: "center",
+            marginBottom: 10
+        }
         
         let groupAccess
-        if (this.state.currentType == 2){
-            groupAccess = <div>Группа: <input type="text" name="group" placeholder="Название группы" defaultValue={this.state.groupName}/></div>
+        let searchResult = []
+        if (this.state.currentType == 1){
+            let userAccessed = []
+            let self = this
+            $.ajax({
+                url: "/desk/searchUsersAccessed.php",
+                method: "post",
+                data: {
+                    deskId: this.props.deskId,
+                    text: this.state.searchUsersAccessed
+                },
+                success: function(result) {
+                    result = JSON.parse(result)
+                    if (result.length != 0){
+                        for (let value in result){
+                            userAccessed.push(
+                            <div key={result[value].id} style={eachUserStyle} onClick={()=>self.swapUserDedicatedAccess(result[value].id)}>
+                                {result[value].login}
+                            </div>
+                            )
+                        }
+                    }
+                },
+                async: false
+            })
+            let userNotAccessed = []
+            $.ajax({
+                url: "/desk/searchUsersNotAccessed.php",
+                method: "post",
+                data: {
+                    deskId: this.props.deskId,
+                    text: this.state.searchUsersNotAccessed
+                },
+                success: function(result) {
+                    result = JSON.parse(result)
+                    if (result.length != 0){
+                        for (let value in result){
+                            userNotAccessed.push(
+                            <div key={result[value].id} style={eachUserStyle} onClick={()=>self.swapUserDedicatedAccess(result[value].id)}>
+                                {result[value].login}
+                            </div>
+                            )
+                        }
+                    }
+                },
+                async: false
+            })
+            groupAccess = <div>
+                <div style={userAccessedList}>
+                    <input type="text" style={searchStyle} name="searchUsersAccessed" placeholder="Поиск..." onChange={this.searchUsersAccessed}/>
+                    {userAccessed}<div style={hiddenStyle}><input type="text" name="group"/></div>
+                </div>
+                <div style={userAccessedList}>
+                    <input type="text" style={searchStyle} name="searchUsersNotAccessed" placeholder="Поиск..." onChange={this.searchUsersNotAccessed}/>
+                    {userNotAccessed}<div style={hiddenStyle}></div>
+                </div>
+            </div>
+        }
+        else if (this.state.currentType == 2){
+            groupAccess = <div>Группа: <input type="text" name="group" style={searchStyle} placeholder="Название группы" defaultValue={this.state.groupName} onChange={this.searchGroup}/></div>
+            if (this.state.searchText != ""){
+                let self = this
+                $.ajax({
+                    url: "/desk/searchGroups.php",
+                    method: "post",
+                    data: {
+                        text: this.state.searchText
+                    },
+                    success: function(result) {
+                        console.dir(result)
+                        result = JSON.parse(result)
+                        if (result.length != 0){
+                            for (let value in result){
+                                searchResult.push(
+                                <div key={result[value].id} style={eachResultStyle} onClick={() => self.findGroup(result[value].group_name)}>
+                                    {result[value].group_name}
+                                </div>
+                                )
+                            }
+                        }
+                    },
+                    async: false
+                })
+            }
         }
         else{
-            groupAccess = <div style={hiddenStyle}>Группа: <input type="text" name="group" placeholder="Название группы" defaultValue={this.state.groupName}/></div>
+            groupAccess = <div style={hiddenStyle}>Группа: <input type="text" name="group" defaultValue={this.state.groupName} /></div>
         }
 
         return(
@@ -184,6 +346,7 @@ class AccessRightsChanger extends React.Component{
                 </select>
                 <br />
                 {groupAccess}
+                {searchResult}
                 <input type="button" style={styleInputAccessRightsChanger} value="Изменить режим доступа" onClick={this.changeAccessRights} />
             </form>
         </div>

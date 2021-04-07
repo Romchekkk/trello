@@ -26,17 +26,17 @@ class PersonalAreaPage extends React.Component{
                 result = JSON.parse(result)
                 document.querySelector("#form [name=login]").style.boxShadow = ""
                 document.querySelector("#form [name=password]").style.boxShadow = ""
-                if (result.noErrors == true){
+                if (result.noErrors){
                     self.props.authoriseUser(result.login, result.userId)
                 }
                 else{
-                    if (result.errorLogin == true){
+                    if (result.errorLogin){
                         document.querySelector("#form [name=login]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorPassword == true){
+                    if (result.errorPassword){
                         document.querySelector("#form [name=password]").style.boxShadow = "0px 0px 5px red"
                     }
-                    if (result.errorUserAssertion == true){
+                    if (result.errorUserAssertion || result.errorUserExisting){
                         form.querySelector("[name=\"error\"]").innerHTML = "Неверное имя пользователя или пароль"
                         document.querySelector("#form [name=login]").style.boxShadow = "0px 0px 5px red"
                         document.querySelector("#form [name=password]").style.boxShadow = "0px 0px 5px red"
