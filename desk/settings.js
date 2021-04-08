@@ -85,18 +85,21 @@ class AccessRightsChanger extends React.Component{
         this.state={
             currentType: currentType,
             groupName: groupName,
-            searchText: "",
             searchUsersAccessed: "",
             searchUsersNotAccessed: "",
+            searchGroupsAccessed: "",
+            searchGroupsNotAccessed: "",
             update: false
         }
 
         this.changeType = this.changeType.bind(this)
         this.changeAccessRights = this.changeAccessRights.bind(this)
-        this.searchGroup = this.searchGroup.bind(this)
         this.searchUsersAccessed = this.searchUsersAccessed.bind(this)
         this.searchUsersNotAccessed = this.searchUsersNotAccessed.bind(this)
+        this.searchGroupsAccessed = this.searchGroupsAccessed.bind(this)
+        this.searchGroupsNotAccessed = this.searchGroupsNotAccessed.bind(this)
         this.swapUserDedicatedAccess = this.swapUserDedicatedAccess.bind(this)
+        this.swapGroupAccess = this.swapGroupAccess.bind(this)
     }
 
     changeType(){
@@ -126,20 +129,6 @@ class AccessRightsChanger extends React.Component{
         })
     }
 
-    searchGroup(){
-        let text = document.querySelector("#accessRightsChangerForm").group.value
-        this.setState({
-            searchText: text
-        })
-    }
-
-    findGroup(text){
-        document.querySelector("#accessRightsChangerForm").group.value = text
-        this.setState({
-            searchText: ""
-        })
-    }
-
     searchUsersAccessed(){
         let text = document.querySelector("#accessRightsChangerForm").searchUsersAccessed.value
         this.setState({
@@ -153,6 +142,20 @@ class AccessRightsChanger extends React.Component{
             searchUsersNotAccessed: text
         })
     }
+    
+    searchGroupsAccessed(){
+        let text = document.querySelector("#accessRightsChangerForm").searchGroupsAccessed.value
+        this.setState({
+            searchGroupsAccessed: text
+        })
+    }
+
+    searchGroupsNotAccessed(){
+        let text = document.querySelector("#accessRightsChangerForm").searchGroupsNotAccessed.value
+        this.setState({
+            searchGroupsNotAccessed: text
+        })
+    }
 
     swapUserDedicatedAccess(userId){
         $.ajax({
@@ -161,6 +164,23 @@ class AccessRightsChanger extends React.Component{
             data: {
                 deskId: this.props.deskId,
                 userId: userId
+            },
+            success: function(result) {},
+            async: false
+        })
+        let update = !this.state.update
+        this.setState({
+            update: update
+        })
+    }
+
+    swapGroupAccess(groupId){
+        $.ajax({
+            url: "/desk/swapGroupAccess.php",
+            method: "post",
+            data: {
+                deskId: this.props.deskId,
+                groupId: groupId
             },
             success: function(result) {},
             async: false
@@ -216,15 +236,6 @@ class AccessRightsChanger extends React.Component{
         let hiddenStyle = {
             display: "none"
         }
-        let eachResultStyle = {
-            marginBottom: 10,
-            border: "1px solid black",
-            cursor: "pointer",
-            fontSize: 20,
-            backgroundColor: "white",
-            zIndex: 100,
-            position: "relative",
-        }
         let eachUserStyle = {
             marginBottom: 10,
             fontSize: 20,
@@ -244,7 +255,7 @@ class AccessRightsChanger extends React.Component{
             marginBottom: 10
         }
         
-        let groupAccess
+        let access
         let searchResult = []
         if (this.state.currentType == 1){
             let userAccessed = []
@@ -292,7 +303,7 @@ class AccessRightsChanger extends React.Component{
                 },
                 async: false
             })
-            groupAccess = <div>
+            access = <div>
                 <div style={userAccessedList}>
                     <input type="text" style={searchStyle} name="searchUsersAccessed" placeholder="Поиск..." onChange={this.searchUsersAccessed}/>
                     {userAccessed}<div style={hiddenStyle}><input type="text" name="group"/></div>
@@ -304,34 +315,64 @@ class AccessRightsChanger extends React.Component{
             </div>
         }
         else if (this.state.currentType == 2){
-            groupAccess = <div>Группа: <input type="text" name="group" style={searchStyle} placeholder="Название группы" defaultValue={this.state.groupName} onChange={this.searchGroup}/></div>
-            if (this.state.searchText != ""){
-                let self = this
-                $.ajax({
-                    url: "/desk/searchGroups.php",
-                    method: "post",
-                    data: {
-                        text: this.state.searchText
-                    },
-                    success: function(result) {
-                        console.dir(result)
-                        result = JSON.parse(result)
-                        if (result.length != 0){
-                            for (let value in result){
-                                searchResult.push(
-                                <div key={result[value].id} style={eachResultStyle} onClick={() => self.findGroup(result[value].group_name)}>
-                                    {result[value].group_name}
-                                </div>
-                                )
-                            }
+            let groupAccessed = []
+            let self = this
+            $.ajax({
+                url: "/desk/searchGroupsAccessed.php",
+                method: "post",
+                data: {
+                    deskId: this.props.deskId,
+                    text: this.state.searchGroupsAccessed
+                },
+                success: function(result) {
+                    result = JSON.parse(result)
+                    if (result.length != 0){
+                        for (let value in result){
+                            groupAccessed.push(
+                            <div key={result[value].id} style={eachUserStyle} onClick={()=>self.swapGroupAccess(result[value].id)}>
+                                {result[value].group_name}
+                            </div>
+                            )
                         }
-                    },
-                    async: false
-                })
-            }
+                    }
+                },
+                async: false
+            })
+            let groupNotAccessed = []
+            $.ajax({
+                url: "/desk/searchGroupsNotAccessed.php",
+                method: "post",
+                data: {
+                    deskId: this.props.deskId,
+                    text: this.state.searchGroupsNotAccessed
+                },
+                success: function(result) {
+                    result = JSON.parse(result)
+                    if (result.length != 0){
+                        for (let value in result){
+                            groupNotAccessed.push(
+                            <div key={result[value].id} style={eachUserStyle} onClick={()=>self.swapGroupAccess(result[value].id)}>
+                                {result[value].group_name}
+                            </div>
+                            )
+                        }
+                    }
+                },
+                async: false
+            })
+            access = <div>
+                <div style={userAccessedList}>
+                    <input type="text" style={searchStyle} name="searchGroupsAccessed" placeholder="Поиск..." onChange={this.searchGroupsAccessed}/>
+                    {groupAccessed}<div style={hiddenStyle}><input type="text" name="group"/></div>
+                </div>
+                <div style={userAccessedList}>
+                    <input type="text" style={searchStyle} name="searchGroupsNotAccessed" placeholder="Поиск..." onChange={this.searchGroupsNotAccessed}/>
+                    {groupNotAccessed}<div style={hiddenStyle}></div>
+                </div>
+            </div>
         }
         else{
-            groupAccess = <div style={hiddenStyle}>Группа: <input type="text" name="group" defaultValue={this.state.groupName} /></div>
+            access = <div style={hiddenStyle}>Группа: <input type="text" name="group" defaultValue={this.state.groupName} /></div>
         }
 
         return(
@@ -345,7 +386,7 @@ class AccessRightsChanger extends React.Component{
                     <option value="3">Общий</option>
                 </select>
                 <br />
-                {groupAccess}
+                {access}
                 {searchResult}
                 <input type="button" style={styleInputAccessRightsChanger} value="Изменить режим доступа" onClick={this.changeAccessRights} />
             </form>

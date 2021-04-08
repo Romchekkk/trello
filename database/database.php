@@ -243,6 +243,36 @@ class dataBase{
         return $users;
     }
 
+    public function searchGroupsAccessed($deskId, $text){
+        foreach (["text", "deskId"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $groups = array();
+        $result = mysqli_query($this->_mysql, "SELECT id, group_name FROM `groups_desks_access` JOIN `groups` ON `group_id` = id WHERE desk_id=$deskId AND INSTR(group_name, '$text')=1 ORDER BY group_name");
+        while ($row = mysqli_fetch_array($result)) {
+            $groups[] = array(
+                'id' => $row[0],
+                'group_name' => $row[1]
+            );
+        }
+        return $groups;
+    }
+
+    public function searchGroupsNotAccessed($deskId, $text){
+        foreach (["text", "deskId"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $groups = array();
+        $result = mysqli_query($this->_mysql, "SELECT * FROM `groups` WHERE id NOT IN (SELECT id FROM `groups_desks_access` JOIN `groups` ON `group_id` = id WHERE desk_id=$deskId) AND INSTR(group_name, '$text')=1");
+        while ($row = mysqli_fetch_array($result)) {
+            $groups[] = array(
+                'id' => $row[0],
+                'group_name' => $row[1]
+            );
+        }
+        return $groups;
+    }
+
     public function getDesks($id, $type){
         foreach (["id", "type"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
@@ -305,18 +335,13 @@ class dataBase{
         return false;
     }
 
-    public function getAccessRights($desk_id, $withGroup = false){
+    public function getAccessRights($desk_id){
         foreach (["desk_id"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
-        $result = mysqli_query($this->_mysql, "SELECT access_rights, group_access FROM `desks` WHERE id=$desk_id");
+        $result = mysqli_query($this->_mysql, "SELECT access_rights FROM `desks` WHERE id=$desk_id");
         if ($result){
-            if ($withGroup){
-                return mysqli_fetch_array($result);
-            }
-            else{
-                return mysqli_fetch_array($result)["access_rights"];
-            }
+            return mysqli_fetch_array($result)["access_rights"];
         }
         return false;
     }
@@ -338,7 +363,20 @@ class dataBase{
         foreach (["desk_id", "user_id"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
-        $result = mysqli_query($this->_mysql, "SELECT * FROM `users_groups` JOIN `desks` ds ON group_access=group_id WHERE `user_id`=$user_id AND ds.id=$desk_id");
+        $result = mysqli_query($this->_mysql, "SELECT * FROM (SELECT * FROM `users` JOIN `users_groups` ON id = `user_id` WHERE id=$user_id) usrgrp JOIN `groups_desks_access` gda ON usrgrp.group_id = gda.group_id WHERE desk_id = $desk_id");
+        if ($result){
+            if (mysqli_fetch_array($result)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function isGroupAccessed($desk_id, $group_id){
+        foreach (["desk_id", "group_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $result = mysqli_query($this->_mysql, "SELECT * FROM `groups_desks_access` WHERE desk_id = $desk_id AND group_id = $group_id");
         if ($result){
             if (mysqli_fetch_array($result)){
                 return true;
@@ -363,7 +401,7 @@ class dataBase{
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
         }
         if ($newType != 2){
-            mysqli_query($this->_mysql, "UPDATE desks SET access_rights=$newType, group_access=1 WHERE id=$desk_id");
+            mysqli_query($this->_mysql, "UPDATE desks SET access_rights=$newType WHERE id=$desk_id");
         }
         else{
             $result = mysqli_query($this->_mysql, "SELECT `id` FROM `groups` WHERE group_name='$newGroup'");
@@ -372,7 +410,7 @@ class dataBase{
                 if ($groupName == "") {
                     $groupName = 1;
                 }
-                mysqli_query($this->_mysql, "UPDATE desks SET access_rights=$newType, group_access=$groupName WHERE id=$desk_id");
+                mysqli_query($this->_mysql, "UPDATE desks SET access_rights=$newType WHERE id=$desk_id");
             }
         }
     }
@@ -386,6 +424,18 @@ class dataBase{
         }
         else{
             mysqli_query($this->_mysql, "INSERT INTO `users_desks_access`(`user_id`, `desk_id`) VALUES ($userId, $deskId)");
+        }
+    }
+
+    public function swapGroupAccess($deskId, $groupId){
+        foreach (["deskId", "groupId"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        if ($this->isGroupAccessed($deskId, $groupId)){
+            mysqli_query($this->_mysql, "DELETE FROM `groups_desks_access` WHERE `group_id`=$groupId AND `desk_id`=$deskId");
+        }
+        else{
+            mysqli_query($this->_mysql, "INSERT INTO `groups_desks_access`(`group_id`, `desk_id`) VALUES ($groupId, $deskId)");
         }
     }
 }
