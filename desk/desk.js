@@ -38,7 +38,10 @@ class Desk extends React.Component{
             displayTaskAdder: "none",
 
             // Дата в меню добавления задач по умолчанию
-            dateForTask: date
+            dateForTask: date,
+
+            // ID заданий, которые находятся в "кармашке"
+            tasksInPocket: false,
         }
 
         this.decrementWeek = this.decrementWeek.bind(this)
@@ -74,7 +77,6 @@ class Desk extends React.Component{
 
     // Завершение перетаскивания
     onDragEnd = result => {
-
         // Параметры перетаскивания (что и куда)
         const { source, destination } = result
 
@@ -83,9 +85,23 @@ class Desk extends React.Component{
             return
         }
 
+        // Если задание помещается в "кармашек"
+        if (destination.droppableId == -1){
+            if (source.droppableId != -1){
+                let tasks = []
+                if (this.state.tasksInPocket != false){
+                    tasks = this.state.tasksInPocket
+                }
+                tasks.push(result.draggableId)
+                this.setState({
+                    tasksInPocket: tasks
+                })
+            }
+        }
+
         // Если цель переноса есть
         else {
-
+            console.dir(result)
             // Включаем заглушку
             document.querySelector("#loader").style.display = "";
 
@@ -102,7 +118,7 @@ class Desk extends React.Component{
                     // Место в порядке заданий
                     destination: destination.index,
 
-                    // Дата, с которой переносится задание
+                    // Место, которое задание занимало
                     target: source.index,
 
                     // Какое задание переносится (его ID в базе данных)
@@ -113,6 +129,14 @@ class Desk extends React.Component{
                     // Отключаем заглушку
                     document.querySelector("#loader").style.display = "none";
 
+                    if (source.droppableId == -1){
+                        let tasksInPocket = self.state.tasksInPocket
+                        let index = tasksInPocket.indexOf(result.draggableId)
+                        tasksInPocket.splice(index, 1)
+                        self.setState({
+                            tasksInPocket: tasksInPocket
+                        })
+                    }
                     // Обновляем компоненты
                     self.needUpdate()
                 },
@@ -193,18 +217,18 @@ class Desk extends React.Component{
                 // Если собираем компонент дня, который идёт до сегодняшнего
                 if (i < day){
                     today.setHours(-24*(day-i))
-                    desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                    desk.push(<Day key={i} tasksInPocket={this.state.tasksInPocket} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
 
                 // Если собираем компонент сегодняшнего дня
                 else if(i == day){
-                    desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={true} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                    desk.push(<Day key={i} tasksInPocket={this.state.tasksInPocket} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={true} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
 
                 // Если собираем компонент дня, который идёт после сегодняшнего
                 else{
                     today.setHours(24*(i-day))
-                    desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                    desk.push(<Day key={i} tasksInPocket={this.state.tasksInPocket} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
                 }
             }
         }
@@ -214,14 +238,18 @@ class Desk extends React.Component{
             for (let i = 0; i < 7; i++){
                 let today = new Date()
                 today.setHours(-24*(day-i) + 24*7*this.state.week)
-                desk.push(<Day key={i} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
+                desk.push(<Day key={i} tasksInPocket={this.state.tasksInPocket} showTaskAdder={this.showTaskAdder} desk_id={this.state.id} currentDay={false} dayOfWeek={days[i]} timestamp={today.getTime()} date={today.getDate()+" "+months[today.getMonth()] + " " + today.getFullYear()} />)
             }
         }
-
+        let pocket
+        if (true){ // Если есть доступ
+            pocket = <Pocket tasksId={this.state.tasksInPocket} desk_id={this.state.id}/>
+        }
         return(
             <div style={weekStyle}>
                 <div style={leftArrowStyle} onClick={this.decrementWeek}>◀</div>
                 <DragDropContext onDragEnd={this.onDragEnd}>
+                {pocket}
                 {desk}
                 </DragDropContext>
                 <div style={rightArrowStyle} onClick={this.incrementWeek}>▶</div>
@@ -702,7 +730,7 @@ class Day extends React.Component{
         // Собираем задания дня
         let tasksPrint = []
         let self = this
-
+        let tasksInPocket = this.props.tasksInPocket
         // Отправляем запрос на список заданий дня
         $.ajax({
             url: "desk/getTasks.php",
@@ -720,17 +748,19 @@ class Day extends React.Component{
                 // Обрабатываем полученные задания и создаем их компоненты
                 result = JSON.parse(result)
                 for (let value in result){
-                    tasksPrint.push(<Task key={result[value].id} 
-                        task={result[value].task}
-                        importance={result[value].importance}
-                        category={result[value].category}
-                        deleteTask={self.deleteTask}
-                        completeTask={self.completeTask}
-                        uncompleteTask={self.uncompleteTask}
-                        isComplete={result[value].isComplete}
-                        dayOrder={result[value].dayOrder}
-                        completeTime={result[value].completeTime}
-                    />)
+                    if (tasksInPocket == false || tasksInPocket.indexOf(result[value].id) == -1){
+                        tasksPrint.push(<Task key={result[value].id} 
+                            task={result[value].task}
+                            importance={result[value].importance}
+                            category={result[value].category}
+                            deleteTask={self.deleteTask}
+                            completeTask={self.completeTask}
+                            uncompleteTask={self.uncompleteTask}
+                            isComplete={result[value].isComplete}
+                            dayOrder={result[value].dayOrder}
+                            completeTime={result[value].completeTime}
+                        />)
+                    }
                 }
             },
             async: false
@@ -767,7 +797,6 @@ class Task extends React.Component{
 
         // Кнопка завершения
         let completer = <input type="button" onClick={()=>this.props.completeTask(this._reactInternalFiber.key)} value="Завершить"/>
-
         // Если задание уже завершено, то добавляем кнопку отмены
         if (this.props.isComplete == true){
             styleTask = {
@@ -776,7 +805,7 @@ class Task extends React.Component{
                 borderTop: "1px solid black",
                 borderBottom: "1px solid black",
                 marginTop: 20,
-                wordBreak: "break-all"
+                wordBreak: "break-all",
             }
             completer = <input type="button" onClick={()=>this.props.uncompleteTask(this._reactInternalFiber.key)} value="Отменить"/>
         }
@@ -790,7 +819,7 @@ class Task extends React.Component{
                     borderTop: "1px solid black",
                     borderBottom: "1px solid black",
                     marginTop: 20,
-                    wordBreak: "break-all"
+                    wordBreak: "break-all",
                 }
             }
             else if(this.props.importance == "Средней важности"){
@@ -800,7 +829,7 @@ class Task extends React.Component{
                     borderTop: "1px solid black",
                     borderBottom: "1px solid black",
                     marginTop: 20,
-                    wordBreak: "break-all"
+                    wordBreak: "break-all",
                 }
             }
             else if(this.props.importance == "Не срочно"){
@@ -810,7 +839,7 @@ class Task extends React.Component{
                     borderTop: "1px solid black",
                     borderBottom: "1px solid black",
                     marginTop: 20,
-                    wordBreak: "break-all"
+                    wordBreak: "break-all",
                 }
             }
         }
@@ -859,6 +888,75 @@ class Task extends React.Component{
                 </div>
             )}
             </Draggable>
+        )
+    }
+}
+
+class Pocket extends React.Component{
+    constructor(props){
+        super(props)
+    }
+
+    render(){
+        
+        let tasksInPocket = []
+        let tasksId = []
+        if (this.props.tasksId != false){
+            tasksId = this.props.tasksId
+        }
+        let h = ((tasksId.length == 0 ? 1 : tasksId.length) * 130)
+        if (this.props.tasksId != false){
+            $.ajax({
+                url: "desk/getTasksById.php",
+                method: "post",
+                data: {
+
+                    tasksId: tasksId,
+                    // ID текущей доски
+                    desk_id: this.props.desk_id
+                },
+                success: function( result ) {
+                    // Обрабатываем полученные задания и создаем их компоненты
+                    result = JSON.parse(result)
+                    for (let value in result){
+                        tasksInPocket.push(<Task key={result[value].id} 
+                            task={result[value].task}
+                            importance={result[value].importance}
+                            category={result[value].category}
+                            deleteTask={self.deleteTask}
+                            completeTask={self.completeTask}
+                            uncompleteTask={self.uncompleteTask}
+                            isComplete={result[value].isComplete}
+                            dayOrder={result[value].dayOrder}
+                            completeTime={result[value].completeTime}
+                        />)
+                    }
+                },
+                async: false
+            })
+        }
+        else{
+            tasksInPocket = <div>Кармашек для заданий</div>
+        }
+        let divStyle = {
+            border: "1px solid black",
+            height: h,
+            width: "13.5%",
+            position: "absolute",
+            bottom: 10,
+            left: 40
+        }
+        return(
+            <div style={divStyle}>
+                <Droppable droppableId={"-1"}>
+                    {(provided, snapshot) => (
+                        <div ref={provided.innerRef}>
+                            {tasksInPocket}
+                            {provided.placeholder}
+                        </div>
+                    )}
+                </Droppable>
+            </div>
         )
     }
 }

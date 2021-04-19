@@ -1,12 +1,13 @@
 // Настройки доски
 class FuckGoBack extends React.Component{
     render(){
-        let buttonStyle = {
-            margin: "20px 0 0 34%"
+        let divStyle = {
+            display: "inline-block",
+            float: "right"
         }
         return(
-            <div>
-                <input style={buttonStyle} type="button" value="Назад" onClick={this.props.unsetDesk}/>
+            <div style={divStyle}>
+                <input type="button" value="Назад" onClick={this.props.unsetDesk}/>
             </div>
         )
     }
@@ -42,21 +43,17 @@ class Settings extends React.Component{
     }
 
     render(){
-        let settingsStyle={
-            margin: 10,
-            width: "68%",
-            boxSizing: "border-box",
-            height: 50
+        let divStyle = {
+            display: "inline-block"
         }
         let accessRightsChanger
         if (this.state.accessRightsChanger){
             accessRightsChanger = <AccessRightsChanger closeAccessRightsChanger={this.closeAccessRightsChanger} deskId={this.props.deskId} />
         }
         return(
-            <div style={settingsStyle}>
+            <div style={divStyle}>
                 {accessRightsChanger}
                 <input type="button" value="Изменить права доступа" onClick={this.openAccessRightsChanger} />
-                <input type="button" value="Назад" onClick={this.props.unsetDesk}/>
             </div>
         )
     }

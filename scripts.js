@@ -173,17 +173,22 @@ class Header extends React.Component{
 // Рабочее пространство пользователя (доска, её настройки и чат)
 class Workspace extends React.Component{
     render(){
-        let settings
-        if (true){
-            settings = <Settings unsetDesk={this.props.unsetDesk} deskId={this.props.deskId}/>
+        let settings = []
+        let settingsStyle={
+            margin: 10,
+            marginTop: 20,
+            width: "68%",
+            boxSizing: "border-box",
+            height: 50,
         }
-        else{
-            settings = <FuckGoBack unsetDesk={this.props.unsetDesk}/>
+        if (true){ // Если создатель
+            settings.push(<Settings unsetDesk={this.props.unsetDesk} deskId={this.props.deskId}/>)
         }
+        settings.push(<FuckGoBack unsetDesk={this.props.unsetDesk}/>)
         return(
             <div>
                 <Chat deskId={this.props.deskId}/>
-                {settings}
+                <div style={settingsStyle}>{settings}</div>
                 <Desk deskId={this.props.deskId} />
             </div>
         )

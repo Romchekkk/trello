@@ -44,6 +44,29 @@ class dataBase{
         return $tasks;
     }
 
+    public function getTasksById($tasksId, $desk_id){
+        foreach ([ "desk_id"] as $param) {
+            $$param = mysqli_real_escape_string($this->_mysql, $$param);
+        }
+        $tasks = array();
+        foreach($tasksId as $id){
+            $id = mysqli_real_escape_string($this->_mysql, $id);
+            $result = mysqli_query($this->_mysql, "SELECT task, importance, category, id, is_complete, day_order, complete_time FROM `tasks` WHERE id=$id AND desk_id=$desk_id");
+            while($row = mysqli_fetch_array($result)){
+                $tasks[] = array(
+                    'task' => $row[0],
+                    'importance' => $row[1],
+                    'category' => $row[2],
+                    'id' => $row[3],
+                    'isComplete' => $row[4],
+                    'dayOrder' => $row[5],
+                    'completeTime' => $row[6]
+                );
+            }
+        }
+        return $tasks;
+    }
+
     public function deleteTask($id){
         foreach (["id"] as $param) {
             $$param = mysqli_real_escape_string($this->_mysql, $$param);
